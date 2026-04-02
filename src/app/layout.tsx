@@ -34,7 +34,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="fr" className={`${inter.variable}`}>
-      <body className="h-[100dvh] flex flex-col bg-gray-50 font-sans antialiased overflow-hidden">
+      <body className="h-[100dvh] flex flex-col bg-[#0a1222] font-sans antialiased overflow-hidden">
         {/* Fixed header */}
         <header
           className="flex-shrink-0 bg-indigo-600 text-white px-4 flex items-center justify-between shadow-md"
