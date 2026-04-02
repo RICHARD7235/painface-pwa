@@ -3,8 +3,8 @@ import Link from "next/link";
 const NAV_ITEMS = [
   {
     href: "/camera",
-    label: "Caméra",
-    sublabel: "Analyse faciale en temps réel",
+    label: "Monitor",
+    sublabel: "Suivi de la douleur en temps réel",
     icon: "\u{1F3A5}",
     className: "bg-indigo-600 hover:bg-indigo-700 text-white",
   },
