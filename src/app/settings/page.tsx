@@ -445,8 +445,8 @@ export default function SettingsPage() {
   }, []);
 
   return (
-    <div className="flex flex-1 flex-col bg-[#0a0e1a]">
-      <div className="flex-1 overflow-y-auto px-4 pt-2 pb-28 max-w-2xl mx-auto w-full">
+    <div className="flex flex-1 flex-col min-h-0 bg-[#0a0e1a]">
+      <div className="flex-1 min-h-0 overflow-y-auto px-4 pt-2 pb-28 max-w-2xl mx-auto w-full">
         {/* Back link */}
         <button
           onClick={() => router.back()}
