@@ -503,7 +503,7 @@ export default function PatientDetailPage() {
       {/* ── Bouton demarrer seance ────────────────────────────────── */}
       <div className="p-4">
         <Link
-          href={`/monitor?patientId=${patient.id}`}
+          href={`/camera?patientId=${patient.id}`}
           className="flex items-center justify-center rounded-xl bg-indigo-600 py-4 text-base font-bold text-white shadow-md shadow-indigo-600/30 hover:bg-indigo-700 transition-colors"
         >
           &#9654;  Demarrer une seance
