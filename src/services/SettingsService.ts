@@ -38,7 +38,7 @@ export const DEFAULT_APP_SETTINGS: AppSettings = {
   spikeLowThreshold:      3,
   spikeHighThreshold:     8,
   pspiDoubleBipThreshold: 12,
-  calibrationDurationSec: 10,
+  calibrationDurationSec: 5,
 };
 
 const STORAGE_KEY = 'painface_settings';
