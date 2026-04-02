@@ -589,7 +589,7 @@ export default function CameraView() {
   const { width, height } = dimensions;
 
   return (
-    <div className="flex h-[100dvh] flex-col bg-[#0b1628]">
+    <div className="flex flex-1 min-h-0 flex-col bg-[#0b1628]">
       {/* ── Camera zone 60% ─────────────────────────────────────────────── */}
       <div className="relative flex-[6] overflow-hidden bg-black">
         <video

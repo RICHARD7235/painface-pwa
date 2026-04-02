@@ -36,7 +36,7 @@ const NAV_ITEMS = [
 
 export default function HomePage() {
   return (
-    <div className="flex min-h-screen flex-col bg-gray-50 px-6 pt-12 pb-8">
+    <div className="flex flex-1 flex-col bg-gray-50 px-6 pt-8 pb-4 overflow-auto">
       <div className="mx-auto w-full max-w-md">
         {/* Header */}
         <h1 className="mb-1 text-3xl font-bold text-gray-900">PainFace</h1>
