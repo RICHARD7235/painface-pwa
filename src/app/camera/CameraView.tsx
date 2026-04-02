@@ -174,10 +174,11 @@ function AUBarsPanel({ aus }: { aus: ActionUnitsResult }) {
 
 function StatusBadge({ status }: { status: DetectionStatus }) {
   if (status === "loading") return null;
+  const color = getStatusColor(status);
   return (
     <span
-      className="rounded-full px-2.5 py-0.5 text-xs font-medium text-white"
-      style={{ backgroundColor: getStatusColor(status) + "CC" }}
+      className="rounded-full px-3 py-1 text-[11px] font-semibold text-white backdrop-blur-md border border-white/10"
+      style={{ backgroundColor: color + "40", boxShadow: `0 0 12px ${color}30` }}
     >
       {getStatusText(status)}
     </span>
@@ -185,11 +186,11 @@ function StatusBadge({ status }: { status: DetectionStatus }) {
 }
 
 function CircularGauge({ score }: { score: number }) {
-  const SIZE = 120;
+  const SIZE = 110;
   const CX = SIZE / 2;
-  const CY = SIZE / 2 + 6;
-  const R = 42;
-  const STROKE = 9;
+  const CY = SIZE / 2 + 5;
+  const R = 40;
+  const STROKE = 8;
   const START_DEG = 135;
   const TOTAL_DEG = 270;
   const progress = Math.min(score / PSPI_MAX, 0.9999);
@@ -199,17 +200,24 @@ function CircularGauge({ score }: { score: number }) {
   const fgPath = progress > 0.005 ? arcPath(CX, CY, R, START_DEG, endDeg) : null;
   const color = pspiColor(score);
 
+  // Glow filter
   return (
     <svg width={SIZE} height={SIZE} className="flex-shrink-0">
-      <path d={bgPath} stroke="#1e3a5f" strokeWidth={STROKE} fill="none" strokeLinecap="round" />
+      <defs>
+        <filter id="glow">
+          <feGaussianBlur stdDeviation="3" result="blur" />
+          <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+        </filter>
+      </defs>
+      <path d={bgPath} stroke="#1a2744" strokeWidth={STROKE} fill="none" strokeLinecap="round" />
       {fgPath && (
-        <path d={fgPath} stroke={color} strokeWidth={STROKE} fill="none" strokeLinecap="round" className="transition-all duration-300" />
+        <path d={fgPath} stroke={color} strokeWidth={STROKE} fill="none" strokeLinecap="round" className="transition-all duration-300" filter="url(#glow)" />
       )}
-      <text x={CX} y={CY - 4} textAnchor="middle" fontSize={24} fontWeight="700" fill={color}>
+      <text x={CX} y={CY - 2} textAnchor="middle" fontSize={22} fontWeight="800" fill={color} style={{ fontFamily: "monospace" }}>
         {score.toFixed(1)}
       </text>
-      <text x={CX} y={CY + 10} textAnchor="middle" fontSize={9} fill="#64748b">
-        / {PSPI_MAX}
+      <text x={CX} y={CY + 11} textAnchor="middle" fontSize={8} fill="#475569">
+        / {PSPI_MAX} PSPI
       </text>
       <text x={CX} y={CY + 22} textAnchor="middle" fontSize={9} fontWeight="600" fill={color}>
         {pspiLabel(score)}
@@ -629,15 +637,15 @@ export default function CameraView() {
         )}
 
         {/* Timer -- top left */}
-        <div className="absolute left-3 top-3 flex items-center gap-1.5 rounded-full bg-black/50 px-2.5 py-1 pointer-events-none">
-          <span className="inline-block h-2 w-2 rounded-full bg-red-500 animate-pulse" />
-          <span className="text-xs font-mono text-white">{formatTime(sessionSec)}</span>
+        <div className="absolute left-3 top-3 flex items-center gap-1.5 rounded-full backdrop-blur-md bg-black/40 border border-white/10 px-3 py-1 pointer-events-none">
+          <span className="inline-block h-2 w-2 rounded-full bg-red-500 animate-pulse shadow-sm shadow-red-500/50" />
+          <span className="text-[11px] font-mono font-medium text-white">{formatTime(sessionSec)}</span>
         </div>
 
         {/* FPS -- top right */}
         {mediaReady && (
-          <div className="absolute right-3 top-3 rounded-full bg-black/50 px-2.5 py-1 pointer-events-none">
-            <span className="text-xs font-mono text-white">{fps} fps</span>
+          <div className="absolute right-3 top-3 rounded-full backdrop-blur-md bg-black/40 border border-white/10 px-3 py-1 pointer-events-none">
+            <span className="text-[11px] font-mono font-medium text-cyan-300">{fps} <span className="text-slate-400">fps</span></span>
           </div>
         )}
 
@@ -692,10 +700,10 @@ export default function CameraView() {
         {/* Switch camera -- bottom left */}
         {mediaReady && (
           <button
-            className="absolute left-3 bottom-3 rounded-full bg-gray-700/90 p-2 text-white shadow-lg transition hover:bg-gray-600"
+            className="absolute left-3 bottom-3 rounded-full backdrop-blur-md bg-black/40 border border-white/10 p-2.5 text-white active:bg-white/20 transition"
             onClick={switchCamera} aria-label="Changer de caméra"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
@@ -705,7 +713,7 @@ export default function CameraView() {
         {/* Mark event -- bottom right */}
         {mediaReady && (
           <button
-            className="absolute right-3 bottom-3 rounded-full bg-indigo-600/90 px-3 py-1.5 text-xs font-medium text-white shadow-lg transition hover:bg-indigo-700"
+            className="absolute right-3 bottom-3 rounded-full backdrop-blur-md bg-indigo-500/30 border border-indigo-400/30 px-4 py-2 text-[11px] font-semibold text-indigo-200 active:bg-indigo-500/40 transition shadow-lg shadow-indigo-500/10"
             onClick={() => setShowAnnotModal(true)}
           >
             + Marquer
@@ -714,31 +722,32 @@ export default function CameraView() {
       </div>
 
       {/* ── Dashboard 40% ───────────────────────────────────────────────── */}
-      <div ref={dashRef} className="flex flex-[4] min-h-0 flex-col gap-1.5 overflow-hidden bg-[#0b1628] px-3 pt-2 pb-1">
+      <div ref={dashRef} className="flex flex-[4] min-h-0 flex-col gap-1.5 overflow-hidden px-3 pt-2 pb-1" style={{ background: "linear-gradient(180deg, #0d1424 0%, #0a0e1a 100%)" }}>
         {/* Row 1: Gauge + Stats */}
         <div className="flex gap-3">
           <div className="flex items-center justify-center">
             <CircularGauge score={gaugeScore} />
           </div>
-          <div className="flex flex-1 flex-col justify-center gap-1">
-            <div>
-              <span className="text-[10px] uppercase tracking-wider text-slate-500">PSPI lissé</span>
-              <p className="text-lg font-bold leading-tight transition-colors duration-300" style={{ color: scoreReady ? pspiColor(rawPspi) : "#64748b" }}>
+          <div className="flex flex-1 flex-col justify-center gap-1.5">
+            {/* PSPI lissé */}
+            <div className="rounded-lg border border-white/[0.06] bg-white/[0.03] px-3 py-1.5">
+              <span className="text-[9px] uppercase tracking-wider text-slate-500 font-medium">PSPI lissé</span>
+              <p className="text-lg font-bold font-mono leading-tight transition-colors duration-300" style={{ color: scoreReady ? pspiColor(rawPspi) : "#475569" }}>
                 {scoreReady ? (smoothedScore ?? 0).toFixed(1) : "--"}
-                {scoreReady && <span className="text-xs font-normal text-slate-500"> / {PSPI_MAX}</span>}
+                {scoreReady && <span className="text-[10px] font-normal text-slate-600"> /{PSPI_MAX}</span>}
               </p>
             </div>
-            <hr className="border-[#1e3a5f]" />
-            <div className="flex gap-4">
-              <div>
-                <span className="text-[10px] uppercase tracking-wider text-slate-500">Spikes</span>
-                <p className="text-base font-bold leading-tight" style={{ color: scoreReady && spikeCount > 0 ? "#ef4444" : "#64748b" }}>
+            {/* Spikes + Annotations row */}
+            <div className="flex gap-1.5">
+              <div className="flex-1 rounded-lg border border-white/[0.06] bg-white/[0.03] px-2.5 py-1.5">
+                <span className="text-[9px] uppercase tracking-wider text-slate-500 font-medium">Spikes</span>
+                <p className="text-base font-bold font-mono leading-tight" style={{ color: scoreReady && spikeCount > 0 ? "#ef4444" : "#475569" }}>
                   {scoreReady ? spikeCount : "--"}
                 </p>
               </div>
-              <div>
-                <span className="text-[10px] uppercase tracking-wider text-slate-500">Annotations</span>
-                <p className="text-base font-bold leading-tight text-blue-400">{annotations.length}</p>
+              <div className="flex-1 rounded-lg border border-white/[0.06] bg-white/[0.03] px-2.5 py-1.5">
+                <span className="text-[9px] uppercase tracking-wider text-slate-500 font-medium">Notes</span>
+                <p className="text-base font-bold font-mono leading-tight text-cyan-400">{annotations.length}</p>
               </div>
             </div>
           </div>
@@ -746,20 +755,20 @@ export default function CameraView() {
 
         {/* Calibration banner or sparkline */}
         {!scoreReady ? (
-          <div className="rounded-lg bg-[#13243d] px-3 py-2">
-            <p className="text-xs text-slate-400">
+          <div className="rounded-xl border border-indigo-500/20 bg-indigo-500/[0.06] px-3 py-2.5">
+            <p className="text-xs text-indigo-300/80">
               {isCalibrating
-                ? `Calibration... ${Math.round(calibrationProgress * 100)}% -- Gardez une expression neutre`
+                ? `Calibration... ${Math.round(calibrationProgress * 100)}% — Gardez une expression neutre`
                 : status === "detected"
-                  ? "Visage détecté -- appuyez sur \"Calibrer\" pour démarrer l'analyse"
+                  ? "Visage détecté — appuyez sur \"Calibrer\" pour démarrer l'analyse"
                   : "En attente de détection du visage..."}
             </p>
           </div>
         ) : (
-          <div>
-            <div className="flex items-baseline justify-between mb-0.5">
-              <span className="text-[10px] font-medium text-slate-300">Historique PSPI</span>
-              <span className="text-[9px] text-slate-500">{HISTORY_SEC} dernières secondes</span>
+          <div className="rounded-lg border border-white/[0.04] bg-white/[0.02] px-1 pt-1 pb-0.5">
+            <div className="flex items-baseline justify-between mb-0.5 px-1">
+              <span className="text-[9px] font-semibold uppercase tracking-wider text-slate-500">Historique</span>
+              <span className="text-[8px] text-slate-600 font-mono">{HISTORY_SEC}s</span>
             </div>
             <PainHistoryChart data={chartData} annotations={annotations} currentSec={sessionSec} chartWidth={chartWidth} />
           </div>
@@ -767,14 +776,18 @@ export default function CameraView() {
 
       </div>
 
-      {/* ── Bottom bar (same style as Settings) ─────────────────────── */}
-      <div className="flex-shrink-0 bg-[#0b1628] border-t border-[#1e3a5f] p-4 pb-8 flex gap-3">
-        <button className="flex-1 py-3.5 rounded-xl bg-red-600 text-white font-semibold text-[15px] active:bg-red-700 transition-colors" onClick={handleStop}>
+      {/* ── Bottom bar ─────────────────────────────────────────────── */}
+      <div className="flex-shrink-0 border-t border-white/[0.06] bg-[#0a0e1a] px-4 pt-3 pb-8 flex gap-3">
+        <button className="flex-1 py-3 rounded-xl border border-red-500/30 bg-red-500/10 text-red-400 font-semibold text-[14px] active:bg-red-500/20 transition-colors" onClick={handleStop}>
           Arrêter
         </button>
         {mediaReady && !isCalibrating && (
           <button
-            className={`flex-1 py-3.5 rounded-xl font-semibold text-[15px] text-white transition-colors ${calibrationComplete ? "bg-green-600 active:bg-green-700" : "bg-indigo-600 active:bg-indigo-700"}`}
+            className={`flex-1 py-3 rounded-xl font-semibold text-[14px] text-white transition-colors ${
+              calibrationComplete
+                ? "bg-gradient-to-r from-emerald-600 to-teal-500 active:from-emerald-700 active:to-teal-600 shadow-lg shadow-emerald-500/20"
+                : "bg-gradient-to-r from-indigo-600 to-indigo-500 active:from-indigo-700 active:to-indigo-600 shadow-lg shadow-indigo-500/20"
+            }`}
             onClick={startCalibration}
           >
             {calibrationComplete ? "Re-calibrer" : `Calibrer ${settings.calibrationDurationSec} s`}

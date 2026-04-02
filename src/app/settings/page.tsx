@@ -222,7 +222,7 @@ function ValueRow({
         {/* Progress bar */}
         <div className="flex-1 h-1.5 bg-slate-700 rounded-full overflow-hidden">
           <div
-            className="h-1.5 bg-blue-500 rounded-full transition-all"
+            className="h-1.5 bg-indigo-500 rounded-full transition-all"
             style={{ width: fillPct }}
           />
         </div>
@@ -267,7 +267,7 @@ function InfoModal({
       onClick={onClose}
     >
       <div
-        className="w-full max-w-md max-h-[80vh] bg-[#13243d] rounded-2xl p-5 border border-[#1e3a5f]"
+        className="w-full max-w-md max-h-[80vh] bg-[#111827] rounded-2xl p-5 border border-white/[0.08]"
         onClick={(e) => e.stopPropagation()}
       >
         <h3 className="text-[17px] font-bold text-cyan-400 mb-3">{title}</h3>
@@ -278,7 +278,7 @@ function InfoModal({
         </div>
         <button
           onClick={onClose}
-          className="mt-4 w-full py-2.5 bg-blue-500 hover:bg-blue-600 rounded-xl text-white font-bold text-[15px] transition-colors"
+          className="mt-4 w-full py-2.5 bg-gradient-to-r from-indigo-600 to-indigo-500 hover:shadow-indigo-500/30 rounded-xl text-white font-bold text-[15px] transition-all shadow-lg shadow-indigo-500/20"
         >
           Fermer
         </button>
@@ -329,9 +329,9 @@ function AUCard({
 }) {
   const t = thresholds[meta.key];
   return (
-    <div className="bg-[#13243d] rounded-xl p-3.5 mb-2.5 border border-[#1e3a5f]">
+    <div className="border border-white/[0.06] bg-white/[0.03] rounded-xl p-3.5 mb-2.5">
       <div className="flex items-center mb-3.5">
-        <span className="bg-blue-600 text-white text-xs font-bold px-2 py-0.5 rounded-md mr-2.5">
+        <span className="bg-gradient-to-r from-indigo-600 to-indigo-500 text-white text-xs font-bold px-2 py-0.5 rounded-md mr-2.5">
           {meta.number}
         </span>
         <span className="flex-1 text-[15px] font-semibold text-slate-100">
@@ -427,7 +427,7 @@ export default function SettingsPage() {
   const handleSave = useCallback(() => {
     saveSettings(settings);
     window.alert(
-      "Parametres enregistres.\nLes nouveaux reglages seront appliques au prochain monitoring."
+      "Paramètres enregistrés.\nLes nouveaux réglages seront appliqués au prochain monitoring."
     );
     router.back();
   }, [settings, router]);
@@ -435,7 +435,7 @@ export default function SettingsPage() {
   // ── Reset ──────────────────────────────────────────────────────────────────
   const handleReset = useCallback(() => {
     const ok = window.confirm(
-      "Reinitialiser les parametres ?\nTous les reglages reviendront aux valeurs par defaut."
+      "Réinitialiser les paramètres ?\nTous les réglages reviendront aux valeurs par défaut."
     );
     if (!ok) return;
     resetSettings();
@@ -445,17 +445,20 @@ export default function SettingsPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#0b1628] flex flex-col">
+    <div className="flex flex-1 flex-col bg-[#0a0e1a]">
       <div className="flex-1 overflow-y-auto px-4 pt-2 pb-28 max-w-2xl mx-auto w-full">
         {/* Back link */}
         <button
           onClick={() => router.back()}
-          className="text-sm text-indigo-400 hover:text-indigo-300 mb-2 mt-3"
+          className="text-sm text-indigo-400 hover:text-indigo-300 mb-2 mt-3 flex items-center gap-1"
         >
-          &larr; Retour
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
+          Retour
         </button>
 
-        <h1 className="text-xl font-bold text-slate-100 mb-1">Parametres</h1>
+        <h1 className="text-xl font-bold text-white mb-1">Paramètres</h1>
 
         {/* ─── Seuils AU ─────────────────────────────────────── */}
         <SectionHeader
@@ -479,7 +482,7 @@ export default function SettingsPage() {
           subtitle="Lissage, detection de spikes et alertes sonores."
         />
 
-        <div className="bg-[#13243d] rounded-xl p-3.5 border border-[#1e3a5f] mb-2.5">
+        <div className="border border-white/[0.06] bg-white/[0.03] rounded-xl p-3.5 mb-2.5">
           {ENGINE_PARAMS.filter(
             (p) => p.field !== "calibrationDurationSec"
           ).map((param) => (
@@ -504,7 +507,7 @@ export default function SettingsPage() {
           subtitle="Duree de la phase de visage neutre."
         />
 
-        <div className="bg-[#13243d] rounded-xl p-3.5 border border-[#1e3a5f] mb-2.5">
+        <div className="border border-white/[0.06] bg-white/[0.03] rounded-xl p-3.5 mb-2.5">
           {ENGINE_PARAMS.filter(
             (p) => p.field === "calibrationDurationSec"
           ).map((param) => (
@@ -525,16 +528,16 @@ export default function SettingsPage() {
       </div>
 
       {/* ─── Sticky bottom bar ──────────────────────────────── */}
-      <div className="fixed bottom-0 left-0 right-0 bg-[#0b1628] border-t border-[#1e3a5f] p-4 pb-8 flex gap-3 max-w-2xl mx-auto">
+      <div className="fixed bottom-0 left-0 right-0 bg-[#0a0e1a] border-t border-white/[0.06] p-4 pb-8 flex gap-3 max-w-2xl mx-auto">
         <button
           onClick={handleReset}
-          className="flex-1 py-3.5 rounded-xl border border-red-500 text-red-500 font-semibold text-[15px] hover:bg-red-500/10 transition-colors"
+          className="flex-1 py-3.5 rounded-xl border border-red-500/30 bg-red-500/10 text-red-400 font-semibold text-[15px] hover:bg-red-500/20 transition-colors"
         >
-          Reinitialiser
+          Réinitialiser
         </button>
         <button
           onClick={handleSave}
-          className="flex-[2] py-3.5 rounded-xl bg-blue-500 hover:bg-blue-600 text-white font-bold text-[15px] transition-colors"
+          className="flex-[2] py-3.5 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-500 text-white font-bold text-[15px] shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/30 transition-all"
         >
           Enregistrer
         </button>
