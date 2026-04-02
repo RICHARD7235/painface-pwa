@@ -2,9 +2,9 @@ import Link from "next/link";
 
 // ── SVG Icons (Lucide-style) ─────────────────────────────────────────────────
 
-function IconMonitor() {
+function IconMonitor({ color }: { color: string }) {
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
       <path d="M12 16v5" />
       <path d="M8 21h8" />
       <rect x="2" y="3" width="20" height="13" rx="2" />
@@ -13,9 +13,9 @@ function IconMonitor() {
   );
 }
 
-function IconPatients() {
+function IconPatients({ color }: { color: string }) {
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
       <path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2" />
       <circle cx="9" cy="7" r="4" />
       <path d="M19 8v6M22 11h-6" />
@@ -23,18 +23,18 @@ function IconPatients() {
   );
 }
 
-function IconHistory() {
+function IconHistory({ color }: { color: string }) {
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
       <circle cx="12" cy="12" r="10" />
       <polyline points="12 6 12 12 16 14" />
     </svg>
   );
 }
 
-function IconSettings() {
+function IconSettings({ color }: { color: string }) {
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
       <path d="M12.22 2h-.44a2 2 0 00-2 2v.18a2 2 0 01-1 1.73l-.43.25a2 2 0 01-2 0l-.15-.08a2 2 0 00-2.73.73l-.22.38a2 2 0 00.73 2.73l.15.1a2 2 0 011 1.72v.51a2 2 0 01-1 1.74l-.15.09a2 2 0 00-.73 2.73l.22.38a2 2 0 002.73.73l.15-.08a2 2 0 012 0l.43.25a2 2 0 011 1.73V20a2 2 0 002 2h.44a2 2 0 002-2v-.18a2 2 0 011-1.73l.43-.25a2 2 0 012 0l.15.08a2 2 0 002.73-.73l.22-.39a2 2 0 00-.73-2.73l-.15-.08a2 2 0 01-1-1.74v-.5a2 2 0 011-1.74l.15-.09a2 2 0 00.73-2.73l-.22-.38a2 2 0 00-2.73-.73l-.15.08a2 2 0 01-2 0l-.43-.25a2 2 0 01-1-1.73V4a2 2 0 00-2-2z" />
       <circle cx="12" cy="12" r="3" />
     </svg>
@@ -49,8 +49,7 @@ const NAV_ITEMS = [
     label: "Monitor",
     sublabel: "Suivi de la douleur en temps réel",
     Icon: IconMonitor,
-    gradient: "from-indigo-500 to-cyan-400",
-    glow: "shadow-indigo-500/25",
+    iconColor: "#818cf8",
     iconBg: "bg-indigo-500/20",
     primary: true,
   },
@@ -59,8 +58,7 @@ const NAV_ITEMS = [
     label: "Patients",
     sublabel: "Liste et gestion des patients",
     Icon: IconPatients,
-    gradient: "from-emerald-500 to-teal-400",
-    glow: "shadow-emerald-500/20",
+    iconColor: "#34d399",
     iconBg: "bg-emerald-500/15",
   },
   {
@@ -68,8 +66,7 @@ const NAV_ITEMS = [
     label: "Historique",
     sublabel: "Dernières séances enregistrées",
     Icon: IconHistory,
-    gradient: "from-amber-500 to-orange-400",
-    glow: "shadow-amber-500/20",
+    iconColor: "#fbbf24",
     iconBg: "bg-amber-500/15",
   },
   {
@@ -77,8 +74,7 @@ const NAV_ITEMS = [
     label: "Réglages",
     sublabel: "Seuils, lissage et calibration",
     Icon: IconSettings,
-    gradient: "from-slate-400 to-slate-300",
-    glow: "shadow-slate-400/15",
+    iconColor: "#94a3b8",
     iconBg: "bg-slate-500/15",
   },
 ];
@@ -113,9 +109,7 @@ export default function HomePage() {
             >
               {/* Icon */}
               <div className={`flex h-11 w-11 items-center justify-center rounded-xl ${item.iconBg}`}>
-                <div className={`bg-gradient-to-br ${item.gradient} bg-clip-text text-transparent`}>
-                  <item.Icon />
-                </div>
+                <item.Icon color={item.iconColor} />
               </div>
 
               {/* Text */}
