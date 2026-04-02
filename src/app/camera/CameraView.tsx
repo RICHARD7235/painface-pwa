@@ -17,6 +17,7 @@ import { FaceMeshOverlay } from "../../components/FaceMeshOverlay";
 import { insertSession } from "../../services/DatabaseService";
 import { loadSettings, type AppSettings } from "../../services/SettingsService";
 import { PSPI_MAX } from "../../services/PainScoreEngine";
+import type { ActionUnitsResult } from "../../types/actionUnits";
 import type { DetectionStatus } from "../../types/facemesh";
 import type { SessionAnnotation, PainDataPoint, Session } from "../../types/patient";
 
@@ -116,6 +117,57 @@ function arcPath(cx: number, cy: number, r: number, startDeg: number, endDeg: nu
   const e = polarToXY(cx, cy, r, endDeg);
   const large = endDeg - startDeg > 180 ? 1 : 0;
   return `M ${s.x.toFixed(2)} ${s.y.toFixed(2)} A ${r} ${r} 0 ${large} 1 ${e.x.toFixed(2)} ${e.y.toFixed(2)}`;
+}
+
+// ---- AU overlay --------------------------------------------------------------
+
+const AU_ROWS: { key: keyof Omit<ActionUnitsResult, "timestamp">; label: string }[] = [
+  { key: "au4", label: "AU4" },
+  { key: "au6", label: "AU6" },
+  { key: "au7", label: "AU7" },
+  { key: "au9", label: "AU9" },
+  { key: "au10", label: "AU10" },
+  { key: "au43", label: "AU43" },
+];
+
+const BAR_W = 48;
+
+const ZERO_AU: ActionUnitsResult = {
+  au4: { au: 4, score: 0, intensity: null, raw: 0 },
+  au6: { au: 6, score: 0, intensity: null, raw: 0 },
+  au7: { au: 7, score: 0, intensity: null, raw: 0 },
+  au9: { au: 9, score: 0, intensity: null, raw: 0 },
+  au10: { au: 10, score: 0, intensity: null, raw: 0 },
+  au43: { au: 43, score: 0, intensity: null, raw: 0 },
+  timestamp: 0,
+};
+
+function auBarColor(score: number): string {
+  if (score === 0) return "#374151";
+  if (score <= 2) return "#22c55e";
+  if (score === 3) return "#f59e0b";
+  return "#ef4444";
+}
+
+function AUBarsPanel({ aus }: { aus: ActionUnitsResult }) {
+  return (
+    <div className="rounded-lg px-2.5 py-2" style={{ backgroundColor: "rgba(0,0,0,0.60)" }}>
+      {AU_ROWS.map(({ key, label }) => {
+        const score = aus[key].score;
+        const fill = (score / 5) * BAR_W;
+        const color = auBarColor(score);
+        return (
+          <div key={key} className="my-0.5 flex items-center gap-1">
+            <span className="w-8 font-mono text-xs text-gray-300">{label}</span>
+            <div className="overflow-hidden rounded-sm" style={{ width: BAR_W, height: 6, backgroundColor: "#1f2937" }}>
+              <div className="rounded-sm" style={{ width: fill, height: 6, backgroundColor: color }} />
+            </div>
+            <span className="w-3 text-right font-mono text-xs font-bold" style={{ color }}>{score}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
 }
 
 // ---- Sub-components ----------------------------------------------------------
@@ -447,6 +499,10 @@ export default function CameraView() {
     }
   }, [painEvents, calibrationComplete]);
 
+  // AU overlay toggle
+  const [showAU, setShowAU] = useState(false);
+  const displayAUs = actionUnits ?? ZERO_AU;
+
   // Annotations
   const [annotations, setAnnotations] = useState<SessionAnnotation[]>([]);
   const [showAnnotModal, setShowAnnotModal] = useState(false);
@@ -589,6 +645,19 @@ export default function CameraView() {
         <div className="absolute left-1/2 top-3 -translate-x-1/2 pointer-events-none">
           <StatusBadge status={status} />
         </div>
+
+        {/* AU toggle + panel -- right side below FPS */}
+        {mediaReady && (
+          <div className="absolute right-2.5 top-10 z-20 flex flex-col items-end gap-1">
+            <button
+              className={`rounded-full px-2.5 py-1 text-[10px] font-bold transition ${showAU ? "bg-indigo-600 text-white" : "bg-black/50 text-slate-300"}`}
+              onClick={() => setShowAU((v) => !v)}
+            >
+              AU
+            </button>
+            {showAU && <AUBarsPanel aus={displayAUs} />}
+          </div>
+        )}
 
         {/* Loading / error overlay */}
         {(status === "loading" || status === "error") && (
