@@ -767,14 +767,17 @@ export default function CameraView() {
 
       </div>
 
-      {/* ── Fixed bottom controls ───────────────────────────────────────── */}
-      <div className="flex-shrink-0 flex gap-2 bg-[#0b1628] px-3 pb-3 pt-2">
-        <button className="flex-1 rounded-xl bg-red-600 py-2.5 text-sm font-semibold text-white transition hover:bg-red-700" onClick={handleStop}>
+      {/* ── iOS-style bottom bar ──────────────────────────────────────── */}
+      <div
+        className="flex-shrink-0 flex gap-3 border-t border-white/10 bg-[#0a1222] px-4 pt-2"
+        style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}
+      >
+        <button className="flex-1 rounded-xl bg-red-600 py-3 text-sm font-semibold text-white transition active:bg-red-700" onClick={handleStop}>
           Arrêter
         </button>
         {mediaReady && !isCalibrating && (
           <button
-            className={`flex-1 rounded-xl py-2.5 text-sm font-semibold text-white transition ${calibrationComplete ? "bg-green-600 hover:bg-green-700" : "bg-indigo-600 hover:bg-indigo-700"}`}
+            className={`flex-1 rounded-xl py-3 text-sm font-semibold text-white transition ${calibrationComplete ? "bg-green-600 active:bg-green-700" : "bg-indigo-600 active:bg-indigo-700"}`}
             onClick={startCalibration}
           >
             {calibrationComplete ? "Re-calibrer" : `Calibrer ${settings.calibrationDurationSec} s`}
