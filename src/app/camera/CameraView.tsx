@@ -500,7 +500,7 @@ export default function CameraView() {
   }, [painEvents, calibrationComplete]);
 
   // AU overlay toggle
-  const [showAU, setShowAU] = useState(false);
+  const [showAU, setShowAU] = useState(true);
   const displayAUs = actionUnits ?? ZERO_AU;
 
   // Annotations
