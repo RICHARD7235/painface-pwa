@@ -714,7 +714,7 @@ export default function CameraView() {
       </div>
 
       {/* ── Dashboard 40% ───────────────────────────────────────────────── */}
-      <div ref={dashRef} className="flex flex-[4] flex-col gap-1.5 overflow-hidden bg-[#0b1628] px-3 pt-2 pb-2">
+      <div ref={dashRef} className="flex flex-[4] min-h-0 flex-col gap-1.5 overflow-hidden bg-[#0b1628] px-3 pt-2 pb-1">
         {/* Row 1: Gauge + Stats */}
         <div className="flex gap-3">
           <div className="flex items-center justify-center">
@@ -765,20 +765,21 @@ export default function CameraView() {
           </div>
         )}
 
-        {/* Controls bar */}
-        <div className="flex gap-2 mt-auto pt-1">
-          <button className="flex-1 rounded-xl bg-red-600 py-2.5 text-sm font-semibold text-white transition hover:bg-red-700" onClick={handleStop}>
-            Arrêter
+      </div>
+
+      {/* ── Fixed bottom controls ───────────────────────────────────────── */}
+      <div className="flex-shrink-0 flex gap-2 bg-[#0b1628] px-3 pb-3 pt-2">
+        <button className="flex-1 rounded-xl bg-red-600 py-2.5 text-sm font-semibold text-white transition hover:bg-red-700" onClick={handleStop}>
+          Arrêter
+        </button>
+        {mediaReady && !isCalibrating && (
+          <button
+            className={`flex-1 rounded-xl py-2.5 text-sm font-semibold text-white transition ${calibrationComplete ? "bg-green-600 hover:bg-green-700" : "bg-indigo-600 hover:bg-indigo-700"}`}
+            onClick={startCalibration}
+          >
+            {calibrationComplete ? "Re-calibrer" : `Calibrer ${settings.calibrationDurationSec} s`}
           </button>
-          {mediaReady && !isCalibrating && (
-            <button
-              className={`flex-1 rounded-xl py-2.5 text-sm font-semibold text-white transition ${calibrationComplete ? "bg-green-600 hover:bg-green-700" : "bg-indigo-600 hover:bg-indigo-700"}`}
-              onClick={startCalibration}
-            >
-              {calibrationComplete ? "Re-calibrer" : `Calibrer ${settings.calibrationDurationSec} s`}
-            </button>
-          )}
-        </div>
+        )}
       </div>
 
       {/* ── Annotation modal ────────────────────────────────────────────── */}
