@@ -6,7 +6,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { getRecentSessions } from "../../services/DatabaseService";
+import { getRecentSessions, deleteSession } from "../../services/DatabaseService";
 import type { Session } from "../../types/patient";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -40,44 +40,56 @@ function pspiColor(score: number): string {
 
 interface RowProps {
   session: Session & { patientNom?: string };
+  onDelete: (id: string) => void;
 }
 
-function SessionRow({ session }: RowProps) {
+function SessionRow({ session, onDelete }: RowProps) {
   return (
-    <Link
-      href={`/session/${session.id}`}
-      className="flex items-center bg-white px-4 py-3.5 hover:bg-slate-50 transition-colors"
-    >
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-slate-800">
-          {formatDateTime(session.date)}
-        </p>
-        <p className="text-[13px] font-medium text-indigo-600 mt-0.5">
-          {session.patientNom ?? "Seance anonyme"}
-        </p>
-        <p className="text-xs text-slate-500 mt-0.5">
-          {formatDuration(session.duree)}
-          {session.painEvents.length > 0
-            ? ` \u00b7 ${session.painEvents.length} spike${session.painEvents.length > 1 ? "s" : ""}`
-            : ""}
-        </p>
-      </div>
-      <div className="flex gap-2.5 mr-2">
-        <div className="text-center">
-          <p className={`text-base font-bold ${pspiColor(session.moyennePSPI)}`}>
-            {session.moyennePSPI.toFixed(1)}
+    <div className="flex items-center bg-white hover:bg-slate-50 transition-colors">
+      <Link
+        href={`/session/${session.id}`}
+        className="flex flex-1 items-center px-4 py-3.5 min-w-0"
+      >
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-slate-800">
+            {formatDateTime(session.date)}
           </p>
-          <p className="text-[9px] text-slate-400 uppercase">moy.</p>
-        </div>
-        <div className="text-center">
-          <p className={`text-base font-bold ${pspiColor(session.maxPSPI)}`}>
-            {session.maxPSPI.toFixed(1)}
+          <p className="text-[13px] font-medium text-indigo-600 mt-0.5">
+            {session.patientNom ?? "Séance anonyme"}
           </p>
-          <p className="text-[9px] text-slate-400 uppercase">max</p>
+          <p className="text-xs text-slate-500 mt-0.5">
+            {formatDuration(session.duree)}
+            {session.painEvents.length > 0
+              ? ` \u00b7 ${session.painEvents.length} spike${session.painEvents.length > 1 ? "s" : ""}`
+              : ""}
+          </p>
         </div>
-      </div>
-      <span className="text-xl text-slate-400">{"\u203A"}</span>
-    </Link>
+        <div className="flex gap-2.5 mr-2">
+          <div className="text-center">
+            <p className={`text-base font-bold ${pspiColor(session.moyennePSPI)}`}>
+              {session.moyennePSPI.toFixed(1)}
+            </p>
+            <p className="text-[9px] text-slate-400 uppercase">moy.</p>
+          </div>
+          <div className="text-center">
+            <p className={`text-base font-bold ${pspiColor(session.maxPSPI)}`}>
+              {session.maxPSPI.toFixed(1)}
+            </p>
+            <p className="text-[9px] text-slate-400 uppercase">max</p>
+          </div>
+        </div>
+        <span className="text-xl text-slate-400">{"\u203A"}</span>
+      </Link>
+      <button
+        className="px-3 py-3.5 text-slate-400 hover:text-red-500 transition-colors"
+        onClick={() => onDelete(session.id)}
+        aria-label="Supprimer la séance"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+        </svg>
+      </button>
+    </div>
   );
 }
 
@@ -103,6 +115,19 @@ export default function HistoryPage() {
   useEffect(() => {
     loadSessions();
   }, [loadSessions]);
+
+  const handleDelete = useCallback(
+    async (id: string) => {
+      if (!confirm("Supprimer cette séance ? Cette action est irréversible.")) return;
+      try {
+        await deleteSession(id);
+        setSessions((prev) => prev.filter((s) => s.id !== id));
+      } catch (e) {
+        console.error("[HistoryPage] delete failed:", e);
+      }
+    },
+    [],
+  );
 
   if (loading) {
     return (
@@ -137,7 +162,7 @@ export default function HistoryPage() {
         ) : (
           <div className="divide-y divide-slate-100">
             {sessions.map((session) => (
-              <SessionRow key={session.id} session={session} />
+              <SessionRow key={session.id} session={session} onDelete={handleDelete} />
             ))}
           </div>
         )}
