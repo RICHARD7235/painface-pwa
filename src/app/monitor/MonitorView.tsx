@@ -773,47 +773,7 @@ export default function MonitorView() {
     router,
   ]);
 
-  // Permission handling
-  if (permission === "prompt" && !stream) {
-    return (
-      <div className="flex h-screen flex-col items-center justify-center gap-4 bg-[#0b1628] text-slate-100">
-        <p className="text-center px-8">
-          L&apos;acces a la camera est requis pour l&apos;analyse faciale.
-        </p>
-        <button
-          className="rounded-xl bg-indigo-600 px-6 py-3 font-medium text-white"
-          onClick={() => startCamera("user").then(startDetection)}
-        >
-          Autoriser la camera
-        </button>
-        <button
-          className="text-sm text-slate-400 underline"
-          onClick={() => router.push("/")}
-        >
-          Retour
-        </button>
-      </div>
-    );
-  }
-
-  if (permission === "denied") {
-    return (
-      <div className="flex h-screen flex-col items-center justify-center gap-4 bg-[#0b1628] text-slate-100">
-        <p className="text-center px-8">
-          Acces camera refuse. Autorisez la camera dans les parametres du
-          navigateur.
-        </p>
-        <button
-          className="text-sm text-slate-400 underline"
-          onClick={() => router.push("/")}
-        >
-          Retour
-        </button>
-      </div>
-    );
-  }
-
-  const mediaReady = status !== "loading" && status !== "error";
+  const mediaReady = permission === "granted" && status !== "loading" && status !== "error";
   const rawPspi = currentScore ?? 0;
   const scoreReady = calibrationComplete;
 
@@ -821,6 +781,7 @@ export default function MonitorView() {
     <div className="flex h-[100dvh] flex-col bg-[#0b1628]">
       {/* ── Camera zone 60% ─────────────────────────────────────────────────── */}
       <div className="relative flex-[6] overflow-hidden bg-black">
+        {/* Video always rendered so videoRef is available */}
         <video
           ref={videoRef}
           className="absolute inset-0 h-full w-full object-cover -scale-x-100"
@@ -828,6 +789,43 @@ export default function MonitorView() {
           playsInline
           muted
         />
+
+        {/* Permission: prompt overlay */}
+        {permission === "prompt" && !stream && (
+          <div className="absolute inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-[#0b1628] text-slate-100">
+            <p className="text-center px-8">
+              L&apos;accès à la caméra est requis pour l&apos;analyse faciale.
+            </p>
+            <button
+              className="rounded-xl bg-indigo-600 px-6 py-3 font-medium text-white"
+              onClick={() => startCamera("user").then(startDetection)}
+            >
+              Autoriser la caméra
+            </button>
+            <button
+              className="text-sm text-slate-400 underline"
+              onClick={() => router.push("/")}
+            >
+              Retour
+            </button>
+          </div>
+        )}
+
+        {/* Permission: denied overlay */}
+        {permission === "denied" && (
+          <div className="absolute inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-[#0b1628] text-slate-100">
+            <p className="text-center px-8">
+              Accès caméra refusé. Autorisez la caméra dans les paramètres du
+              navigateur.
+            </p>
+            <button
+              className="text-sm text-slate-400 underline"
+              onClick={() => router.push("/")}
+            >
+              Retour
+            </button>
+          </div>
+        )}
 
         {/* Landmark overlay */}
         <div className="absolute inset-0 pointer-events-none">

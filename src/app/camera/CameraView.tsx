@@ -302,42 +302,13 @@ export default function CameraView() {
     return () => clearTimeout(t);
   }, [calibrationComplete]);
 
-  // Permission: prompt
-  if (permission === "prompt") {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-black">
-        <div className="h-10 w-10 animate-spin rounded-full border-4 border-white border-t-transparent" />
-      </div>
-    );
-  }
-
-  // Permission: denied
-  if (permission === "denied" || cameraError) {
-    return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-gray-900 px-6">
-        <p className="mb-4 text-center text-lg text-white">
-          {"L\u2019acces a la camera est necessaire pour l\u2019analyse faciale"}
-        </p>
-        <button
-          className="rounded-xl bg-indigo-600 px-8 py-3 text-base font-semibold text-white hover:bg-indigo-700"
-          onClick={() => startCamera("user")}
-        >
-          Autoriser la Camera
-        </button>
-        <Link href="/" className="mt-4 px-8 py-3 text-base text-gray-400 hover:text-white">
-          Retour
-        </Link>
-      </div>
-    );
-  }
-
-  const mediaReady = status !== "loading" && status !== "error";
+  const mediaReady = permission === "granted" && status !== "loading" && status !== "error";
   const displayAUs = actionUnits ?? ZERO_AU;
   const { width, height } = dimensions;
 
   return (
     <div className="relative flex h-screen w-screen flex-col bg-black">
-      {/* Video feed */}
+      {/* Video feed — always rendered so videoRef is available for startCamera */}
       <video
         ref={videoRef}
         autoPlay
@@ -347,6 +318,31 @@ export default function CameraView() {
         className="h-full w-full object-cover"
         style={{ transform: "scaleX(-1)" }}
       />
+
+      {/* Permission: prompt overlay */}
+      {permission === "prompt" && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black">
+          <div className="h-10 w-10 animate-spin rounded-full border-4 border-white border-t-transparent" />
+        </div>
+      )}
+
+      {/* Permission: denied overlay */}
+      {(permission === "denied" || cameraError) && (
+        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-gray-900 px-6">
+          <p className="mb-4 text-center text-lg text-white">
+            L&apos;accès à la caméra est nécessaire pour l&apos;analyse faciale
+          </p>
+          <button
+            className="rounded-xl bg-indigo-600 px-8 py-3 text-base font-semibold text-white hover:bg-indigo-700"
+            onClick={() => startCamera("user")}
+          >
+            Autoriser la Caméra
+          </button>
+          <Link href="/" className="mt-4 px-8 py-3 text-base text-gray-400 hover:text-white">
+            Retour
+          </Link>
+        </div>
+      )}
 
       {/* Face mesh overlay (468 green dots) */}
       {width > 0 && height > 0 && (

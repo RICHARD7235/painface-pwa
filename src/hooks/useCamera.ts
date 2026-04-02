@@ -16,15 +16,17 @@ export interface UseCameraReturn {
 
 export function useCamera(): UseCameraReturn {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [permission, setPermission] = useState<CameraPermission>('prompt');
   const [error, setError] = useState<string | null>(null);
   const facingModeRef = useRef<'user' | 'environment'>('user');
 
   const stopCamera = useCallback(() => {
-    stream?.getTracks().forEach((t) => t.stop());
+    streamRef.current?.getTracks().forEach((t) => t.stop());
+    streamRef.current = null;
     setStream(null);
-  }, [stream]);
+  }, []);
 
   const startCamera = useCallback(
     async (facingMode: 'user' | 'environment' = 'user') => {
@@ -40,6 +42,8 @@ export function useCamera(): UseCameraReturn {
           },
           audio: false,
         });
+
+        streamRef.current = mediaStream;
 
         if (videoRef.current) {
           videoRef.current.srcObject = mediaStream;
@@ -63,17 +67,16 @@ export function useCamera(): UseCameraReturn {
   );
 
   const switchCamera = useCallback(async () => {
-    stream?.getTracks().forEach((t) => t.stop());
+    stopCamera();
     const next = facingModeRef.current === 'user' ? 'environment' : 'user';
     await startCamera(next);
-  }, [stream, startCamera]);
+  }, [stopCamera, startCamera]);
 
-  // Cleanup on unmount
+  // Cleanup on unmount — use ref to avoid stale closure
   useEffect(() => {
     return () => {
-      stream?.getTracks().forEach((t) => t.stop());
+      streamRef.current?.getTracks().forEach((t) => t.stop());
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return {
