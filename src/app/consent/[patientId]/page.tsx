@@ -390,7 +390,7 @@ export default function ConsentPage() {
           <SignatureCanvas
             ref={signatureRef}
             height={200}
-            strokeColor="#ffffff"
+            strokeColor="#1e293b"
             strokeWidth={2}
             onSign={() => setSigned(true)}
           />
