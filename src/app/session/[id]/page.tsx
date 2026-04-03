@@ -15,10 +15,134 @@ import {
 import { PSPI_MAX } from "../../../services/PainScoreEngine";
 import type { Session, Patient } from "../../../types/patient";
 
-// ─── Placeholder PDF export ──────────────────────────────────────────────────
+// ─── PDF export via html2pdf.js ──────────────────────────────────────────────
 
-async function exportPdf(_session: Session, _patient: Patient | null): Promise<void> {
-  window.alert("Export PDF : fonctionnalité en cours de développement.");
+async function exportPdf(session: Session, patient: Patient | null): Promise<void> {
+  const html2pdf = (await import("html2pdf.js")).default;
+
+  const patientName = patient ? `${patient.prenom} ${patient.nom}` : "Anonyme";
+  const dateStr = new Intl.DateTimeFormat("fr-FR", {
+    day: "2-digit", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit",
+  }).format(new Date(session.date));
+
+  // Build chart SVG inline
+  const chartSvg = buildChartSvg(session, 520, 150);
+
+  const html = `
+    <div style="font-family: 'Helvetica Neue', Arial, sans-serif; color: #1e293b; padding: 24px; max-width: 560px;">
+      <div style="text-align: center; margin-bottom: 20px;">
+        <h1 style="font-size: 20px; font-weight: 800; margin: 0;">PainFace PRO</h1>
+        <p style="font-size: 11px; color: #94a3b8; margin: 4px 0 0;">Rapport de séance — ${dateStr}</p>
+      </div>
+
+      <div style="background: #f8fafc; border-radius: 10px; padding: 14px; margin-bottom: 16px;">
+        <p style="font-size: 13px; font-weight: 600; margin: 0 0 4px;">Patient : ${patientName}</p>
+        <p style="font-size: 12px; color: #64748b; margin: 0;">Durée : ${formatDuration(session.duree)}</p>
+      </div>
+
+      <div style="display: flex; gap: 10px; margin-bottom: 16px;">
+        <div style="flex: 1; background: #f0fdf4; border-radius: 8px; padding: 12px; text-align: center;">
+          <p style="font-size: 22px; font-weight: 700; color: ${pspiColorHex(session.moyennePSPI)}; margin: 0;">${session.moyennePSPI.toFixed(1)}</p>
+          <p style="font-size: 10px; color: #64748b; margin: 4px 0 0;">PSPI moyen</p>
+        </div>
+        <div style="flex: 1; background: #fef2f2; border-radius: 8px; padding: 12px; text-align: center;">
+          <p style="font-size: 22px; font-weight: 700; color: ${pspiColorHex(session.maxPSPI)}; margin: 0;">${session.maxPSPI.toFixed(1)}</p>
+          <p style="font-size: 10px; color: #64748b; margin: 4px 0 0;">PSPI max</p>
+        </div>
+        <div style="flex: 1; background: #fff7ed; border-radius: 8px; padding: 12px; text-align: center;">
+          <p style="font-size: 22px; font-weight: 700; color: ${session.painEvents.length > 0 ? "#dc2626" : "#64748b"}; margin: 0;">${session.painEvents.length}</p>
+          <p style="font-size: 10px; color: #64748b; margin: 4px 0 0;">Pics de douleur</p>
+        </div>
+      </div>
+
+      <div style="margin-bottom: 16px;">
+        <p style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: #64748b; margin: 0 0 8px;">Courbe PSPI</p>
+        ${chartSvg}
+      </div>
+
+      ${session.annotations.length > 0 ? `
+        <div style="margin-bottom: 16px;">
+          <p style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: #64748b; margin: 0 0 8px;">Annotations (${session.annotations.length})</p>
+          ${session.annotations.map(a => `
+            <div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #f1f5f9;">
+              <div>
+                <span style="font-size: 11px; color: #94a3b8;">${formatDuration(a.sessionSec)}</span>
+                <span style="font-size: 12px; color: #1e293b; margin-left: 8px;">${a.label}</span>
+              </div>
+              <span style="font-size: 13px; font-weight: 700; color: ${pspiColorHex(a.pspi)};">${a.pspi.toFixed(1)}</span>
+            </div>
+          `).join("")}
+        </div>
+      ` : ""}
+
+      ${session.painEvents.length > 0 ? `
+        <div style="margin-bottom: 16px;">
+          <p style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: #64748b; margin: 0 0 8px;">Pics de douleur (${session.painEvents.length})</p>
+          ${session.painEvents.map(e => `
+            <div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #f1f5f9;">
+              <div>
+                <span style="font-size: 11px; color: #94a3b8;">${new Intl.DateTimeFormat("fr-FR", { hour: "2-digit", minute: "2-digit", second: "2-digit" }).format(new Date(e.timestamp))}</span>
+                <span style="font-size: 12px; color: #1e293b; margin-left: 8px;">${e.scoreBefore.toFixed(1)} → ${e.scoreAfter.toFixed(1)}</span>
+              </div>
+              <span style="font-size: 12px; color: #64748b;">${e.deltaMs} ms</span>
+            </div>
+          `).join("")}
+        </div>
+      ` : ""}
+
+      <div style="margin-top: 20px; padding-top: 12px; border-top: 1px solid #e2e8f0; text-align: center;">
+        <p style="font-size: 9px; color: #94a3b8; margin: 0;">
+          PainFace PRO — Outil d'aide à la décision clinique. Ne constitue pas un diagnostic médical.
+        </p>
+      </div>
+    </div>
+  `;
+
+  const container = document.createElement("div");
+  container.innerHTML = html;
+  document.body.appendChild(container);
+
+  try {
+    await html2pdf()
+      .set({
+        margin: [10, 10, 10, 10],
+        filename: `PainFace_${patientName.replace(/\s+/g, "_")}_${new Date(session.date).toISOString().slice(0, 10)}.pdf`,
+        image: { type: "jpeg", quality: 0.95 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+      })
+      .from(container.firstElementChild as HTMLElement)
+      .save();
+  } finally {
+    document.body.removeChild(container);
+  }
+}
+
+function buildChartSvg(session: Session, W: number, H: number): string {
+  if (session.painScores.length < 2) {
+    return `<p style="text-align:center;color:#94a3b8;font-size:12px;">Pas de données</p>`;
+  }
+  const PL = 28, PR = 12, PT = 10, PB = 22;
+  const CW = W - PL - PR;
+  const CH = H - PT - PB;
+  const maxSec = Math.max(...session.painScores.map(d => d.sessionSec), 1);
+  const toX = (sec: number) => PL + (sec / maxSec) * CW;
+  const toY = (v: number) => PT + CH - (v / 16) * CH;
+  const points = session.painScores.map(d => `${toX(d.sessionSec).toFixed(1)},${toY(d.score).toFixed(1)}`).join(" ");
+  const yG = toY(4), yM = toY(8), yT = PT, yB = PT + CH;
+  return `
+    <svg width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg">
+      <rect x="${PL}" y="${yT}" width="${CW}" height="${yM - yT}" fill="rgba(220,38,38,0.06)"/>
+      <rect x="${PL}" y="${yM}" width="${CW}" height="${yG - yM}" fill="rgba(217,119,6,0.06)"/>
+      <rect x="${PL}" y="${yG}" width="${CW}" height="${yB - yG}" fill="rgba(22,163,74,0.06)"/>
+      ${[4, 8, 12].map(v => `<line x1="${PL}" y1="${toY(v)}" x2="${PL + CW}" y2="${toY(v)}" stroke="#e2e8f0" stroke-width="0.8" stroke-dasharray="3,4"/>`).join("")}
+      ${[0, 4, 8, 12, 16].map(v => `<text x="${PL - 3}" y="${toY(v) + 4}" text-anchor="end" font-size="8" fill="#94a3b8">${v}</text>`).join("")}
+      <line x1="${PL}" y1="${yB}" x2="${PL + CW}" y2="${yB}" stroke="#e2e8f0" stroke-width="0.8"/>
+      <polyline points="${points}" fill="none" stroke="#2563eb" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+      <text x="${PL}" y="${H - 4}" font-size="8" fill="#94a3b8">0</text>
+      <text x="${PL + CW}" y="${H - 4}" text-anchor="end" font-size="8" fill="#94a3b8">${formatDuration(maxSec)}</text>
+    </svg>
+  `;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────

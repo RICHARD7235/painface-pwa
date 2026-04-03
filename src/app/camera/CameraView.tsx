@@ -470,8 +470,9 @@ export default function CameraView() {
     return () => clearInterval(id);
   }, []);
 
-  // History rolling buffer
+  // History rolling buffer (display) + full buffer (save)
   const historyRef = useRef<PainDataPoint[]>([]);
+  const fullHistoryRef = useRef<PainDataPoint[]>([]);
   const lastSampleRef = useRef(0);
   const [chartData, setChartData] = useState<PainDataPoint[]>([]);
 
@@ -480,6 +481,7 @@ export default function CameraView() {
     if (Math.abs(sessionSec - lastSampleRef.current) < 1 / SAMPLE_RATE) return;
     lastSampleRef.current = sessionSec;
     const point: PainDataPoint = { sessionSec, score: currentScore };
+    fullHistoryRef.current = [...fullHistoryRef.current, point];
     historyRef.current = [...historyRef.current, point].slice(-HISTORY_MAX);
     setChartData([...historyRef.current]);
   }, [currentScore, sessionSec, calibrationComplete]);
@@ -567,9 +569,9 @@ export default function CameraView() {
   const handleStop = useCallback(async () => {
     stopDetection();
     stopCamera();
-    if (sessionSec >= 5 && historyRef.current.length > 0) {
+    if (sessionSec >= 5 && fullHistoryRef.current.length > 0) {
       try {
-        const scores = historyRef.current;
+        const scores = fullHistoryRef.current;
         const moyenne = scores.reduce((s, p) => s + p.score, 0) / scores.length;
         const max = Math.max(...scores.map((p) => p.score));
         const session: Session = {
