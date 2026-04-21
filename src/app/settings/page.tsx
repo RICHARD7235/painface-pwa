@@ -1,12 +1,8 @@
 "use client";
 
 /**
- * SettingsPage – Parametres de l'analyse de douleur faciale.
- *
- * Sections :
- *   1. SEUILS D'ACTION UNITS  – baseline et plage de detection par AU
- *   2. MOTEUR DE DOULEUR       – lissage EMA, seuils de spike, double bip
- *   3. CALIBRATION             – duree de la calibration automatique
+ * SettingsPage – Paramètres de l'analyse de douleur faciale.
+ * Clinical / éditorial theme.
  */
 
 import { useCallback, useState } from "react";
@@ -34,68 +30,38 @@ interface AUMeta {
 
 const AU_LIST: AUMeta[] = [
   {
-    key: "au4",
-    number: "AU4",
-    label: "Sourcils abaisses",
-    description:
-      "Muscle corrugateur (frontal).\n\nMesure l'ecartement vertical entre le sourcil interne et la paupiere superieure, normalise par la distance inter-oculaire.\n\n- Sourcil abaisse = ecartement reduit = score eleve\n- Indicateur le plus predictif de la douleur (Prkachin 2008)\n- Valeur de repos typique : 0.17 - 0.22\n\nReducisez \"Ligne de repos\" si les sourcils du patient sont naturellement bas.\nReducisez \"Plage\" pour une detection plus reactive (risque de faux positifs).",
-    baselineRange: [0.05, 0.5],
-    rangeRange: [0.02, 0.45],
-    step: 0.01,
+    key: "au4", number: "AU4", label: "Sourcils abaissés",
+    description: "Muscle corrugateur (frontal). Indicateur le plus prédictif de la douleur (Prkachin 2008).",
+    baselineRange: [0.05, 0.5], rangeRange: [0.02, 0.45], step: 0.01,
   },
   {
-    key: "au6",
-    number: "AU6",
-    label: "Joues relevees",
-    description:
-      "Muscle orbiculaire zygomatique.\n\nMesure l'ecartement vertical entre la joue et le coin externe de l'oeil, normalise par l'inter-oculaire.\n\n- Joue remontee = plissement de l'oeil = score eleve\n- Valeur de repos typique : 0.35 - 0.42",
-    baselineRange: [0.1, 0.7],
-    rangeRange: [0.02, 0.4],
-    step: 0.01,
+    key: "au6", number: "AU6", label: "Joues relevées",
+    description: "Muscle orbiculaire zygomatique. Joue remontée = plissement de l'œil.",
+    baselineRange: [0.1, 0.7], rangeRange: [0.02, 0.4], step: 0.01,
   },
   {
-    key: "au7",
-    number: "AU7",
-    label: "Paupieres resserrees",
-    description:
-      "Muscle orbiculaire palpebral (resserrement).\n\nRatio ouverture verticale / largeur de l'oeil (Eye Aspect Ratio simplifie).\n\n- Oeil plisse = EAR reduit = score eleve\n- Reflexe de protection face a la douleur aigue\n- Valeur de repos typique : 0.27 - 0.33\n\nPreferez la calibration automatique pour ce parametre.",
-    baselineRange: [0.1, 0.6],
-    rangeRange: [0.02, 0.5],
-    step: 0.01,
+    key: "au7", number: "AU7", label: "Paupières resserrées",
+    description: "Réflexe de protection face à la douleur aiguë. Préférez la calibration automatique.",
+    baselineRange: [0.1, 0.6], rangeRange: [0.02, 0.5], step: 0.01,
   },
   {
-    key: "au9",
-    number: "AU9",
-    label: "Nez plisse",
-    description:
-      "Muscle releveur naso-labial.\n\nMesure la somme des distances internes au bout du nez, normalisee par l'inter-oculaire.\n\n- Nez plisse = distances reduites = score eleve\n- Valeur de repos typique : 0.10 - 0.14",
-    baselineRange: [0.02, 0.3],
-    rangeRange: [0.02, 0.3],
-    step: 0.01,
+    key: "au9", number: "AU9", label: "Nez plissé",
+    description: "Muscle releveur naso-labial. Valeur de repos typique : 0.10 – 0.14.",
+    baselineRange: [0.02, 0.3], rangeRange: [0.02, 0.3], step: 0.01,
   },
   {
-    key: "au10",
-    number: "AU10",
-    label: "Levre superieure relevee",
-    description:
-      "Muscle releveur de la levre superieure (levator labii).\n\nRatio ouverture interne de la bouche / distance levre-menton.\n\n- Levre relevee = ouverture augmente = score eleve\n- Valeur de repos typique : 0.24 - 0.30",
-    baselineRange: [0.05, 0.6],
-    rangeRange: [0.02, 0.4],
-    step: 0.01,
+    key: "au10", number: "AU10", label: "Lèvre sup. relevée",
+    description: "Muscle releveur de la lèvre supérieure. Valeur de repos typique : 0.24 – 0.30.",
+    baselineRange: [0.05, 0.6], rangeRange: [0.02, 0.4], step: 0.01,
   },
   {
-    key: "au43",
-    number: "AU43",
-    label: "Yeux fermes / mi-clos",
-    description:
-      "Fermeture oculaire - Eye Aspect Ratio 6 points.\n\n- EAR reduit = yeux fermes = score eleve\n- Non inclus dans le PSPI valide mais indicatif\n- Valeur de repos typique : 0.27 - 0.33\n\nUn long clignement declenchera temporairement un score eleve.",
-    baselineRange: [0.1, 0.6],
-    rangeRange: [0.02, 0.5],
-    step: 0.01,
+    key: "au43", number: "AU43", label: "Yeux fermés",
+    description: "Eye Aspect Ratio. Non inclus dans le PSPI mais indicatif.",
+    baselineRange: [0.1, 0.6], rangeRange: [0.02, 0.5], step: 0.01,
   },
 ];
 
-// ─── Metadonnees des parametres moteur ───────────────────────────────────────
+// ─── Parametres moteur ───────────────────────────────────────────────────────
 
 interface EngineMeta {
   field: keyof Omit<AppSettings, "thresholds">;
@@ -109,143 +75,114 @@ interface EngineMeta {
 }
 
 const ENGINE_PARAMS: EngineMeta[] = [
-  {
-    field: "smoothingWindowMs",
-    label: "Lissage EMA",
-    description:
-      "Constante de temps du lissage exponentiel applique au score PSPI affiche.\n\n- 500-1000 ms : reactif\n- 2000 ms : equilibre (defaut)\n- 3000-5000 ms : tres lisse",
-    min: 500,
-    max: 5000,
-    step: 100,
-    decimals: 0,
-    unit: " ms",
-  },
-  {
-    field: "spikeLowThreshold",
-    label: "Seuil spike - bas",
-    description:
-      "Score PSPI en-dessous duquel un pic douloureux peut commencer.\n\n- Valeur conseillee : 2-4\n- Trop bas = faux positifs\n- Trop haut = spikes manques",
-    min: 1,
-    max: 6,
-    step: 1,
-    decimals: 0,
-    unit: "",
-  },
-  {
-    field: "spikeHighThreshold",
-    label: "Seuil spike - haut",
-    description:
-      "Score PSPI au-dessus duquel une montee rapide est qualifiee de spike.\n\n- Valeur conseillee : 7-10",
-    min: 4,
-    max: 15,
-    step: 1,
-    decimals: 0,
-    unit: "",
-  },
-  {
-    field: "pspiDoubleBipThreshold",
-    label: "Double bip - seuil critique",
-    description:
-      "Score PSPI au-dela duquel un double bip ascendant est joue.\n\n- Valeur conseillee : 11-14",
-    min: 6,
-    max: 16,
-    step: 1,
-    decimals: 0,
-    unit: "",
-  },
-  {
-    field: "calibrationDurationSec",
-    label: "Duree de calibration",
-    description:
-      "Duree (en secondes) de la phase de calibration automatique du visage neutre.\n\n- 5-10 s : rapide\n- 10-15 s : recommande (defaut : 10 s)\n- 20-30 s : optimal",
-    min: 5,
-    max: 30,
-    step: 5,
-    decimals: 0,
-    unit: " s",
-  },
+  { field: "smoothingWindowMs", label: "Lissage EMA", description: "Constante de temps du lissage exponentiel. Équilibre recommandé : 2000 ms.", min: 500, max: 5000, step: 100, decimals: 0, unit: " ms" },
+  { field: "spikeLowThreshold", label: "Seuil spike bas", description: "PSPI sous lequel un pic peut commencer. Valeur conseillée : 2 – 4.", min: 1, max: 6, step: 1, decimals: 0, unit: "" },
+  { field: "spikeHighThreshold", label: "Seuil spike haut", description: "PSPI au-dessus duquel une montée est qualifiée de spike. Valeur conseillée : 7 – 10.", min: 4, max: 15, step: 1, decimals: 0, unit: "" },
+  { field: "pspiDoubleBipThreshold", label: "Double bip", description: "PSPI au-delà duquel un double bip est joué. Valeur conseillée : 11 – 14.", min: 6, max: 16, step: 1, decimals: 0, unit: "" },
+  { field: "calibrationDurationSec", label: "Durée visage neutre", description: "Durée de la phase de calibration automatique.", min: 5, max: 30, step: 5, decimals: 0, unit: " s" },
 ];
 
-// ─── ValueRow (stepper + progress) ───────────────────────────────────────────
+// ─── Slider ──────────────────────────────────────────────────────────────────
 
-interface ValueRowProps {
-  label: string;
-  value: number;
-  min: number;
-  max: number;
-  step: number;
-  decimals?: number;
-  unit?: string;
-  onChange: (v: number) => void;
-  onInfo?: () => void;
-}
-
-function ValueRow({
+function Slider({
   label,
   value,
   min,
   max,
-  step,
+  onChange,
   decimals = 2,
   unit = "",
-  onChange,
-  onInfo,
-}: ValueRowProps) {
-  const pct = Math.max(0, Math.min(1, (value - min) / (max - min)));
-  const fillPct = `${Math.round(pct * 100)}%`;
-
-  const decrement = () => {
-    const next = Math.round((value - step) / step) * step;
-    onChange(Math.max(min, parseFloat(next.toFixed(decimals))));
-  };
-  const increment = () => {
-    const next = Math.round((value + step) / step) * step;
-    onChange(Math.min(max, parseFloat(next.toFixed(decimals))));
-  };
+}: {
+  label: string;
+  value: number;
+  min: number;
+  max: number;
+  onChange: (v: number) => void;
+  decimals?: number;
+  unit?: string;
+}) {
+  const pct = Math.max(0, Math.min(100, Math.round(((value - min) / (max - min)) * 100)));
 
   return (
-    <div className="mb-3">
-      <div className="flex items-center mb-1.5">
-        <span className="flex-1 text-[13px] font-medium text-slate-400">
+    <div className="flex-1">
+      <div className="flex justify-between mb-1.5">
+        <span className="text-[10px] text-[var(--color-ink-50)]" style={{ fontFamily: "var(--font-mono)" }}>
           {label}
         </span>
-        {onInfo && (
-          <button
-            onClick={onInfo}
-            className="ml-1.5 p-0.5 text-cyan-400 hover:text-cyan-300 text-sm"
-          >
-            &#x2139;
-          </button>
-        )}
+        <span className="text-[10px] text-[var(--color-ink)]" style={{ fontFamily: "var(--font-mono)" }}>
+          {value.toFixed(decimals)}
+          {unit}
+        </span>
       </div>
-      <div className="flex items-center gap-2.5">
-        {/* Progress bar */}
-        <div className="flex-1 h-1.5 bg-slate-700 rounded-full overflow-hidden">
-          <div
-            className="h-1.5 bg-indigo-500 rounded-full transition-all"
-            style={{ width: fillPct }}
-          />
-        </div>
-        {/* Buttons + value */}
-        <div className="flex items-center gap-2">
-          <button
-            onClick={decrement}
-            className="w-7 h-7 rounded-full bg-slate-800 border border-slate-700 text-slate-200 text-lg leading-none hover:bg-slate-700 flex items-center justify-center"
-          >
-            &minus;
-          </button>
-          <span className="min-w-[56px] text-center text-sm font-bold text-slate-100 tabular-nums">
-            {value.toFixed(decimals)}
-            {unit}
-          </span>
-          <button
-            onClick={increment}
-            className="w-7 h-7 rounded-full bg-slate-800 border border-slate-700 text-slate-200 text-lg leading-none hover:bg-slate-700 flex items-center justify-center"
-          >
-            +
-          </button>
-        </div>
+      <div className="relative h-[3px] rounded-sm" style={{ background: "var(--color-ink-08)" }}>
+        <div className="h-[3px] rounded-sm" style={{ width: `${pct}%`, background: "var(--color-ink)" }} />
+        <div
+          className="absolute top-[-3px] h-[9px] w-[9px] rounded-full"
+          style={{
+            left: `${pct}%`,
+            transform: "translateX(-50%)",
+            background: "var(--color-ink)",
+            border: "1.5px solid var(--color-ivory)",
+          }}
+        />
+        <input
+          type="range"
+          min={min}
+          max={max}
+          step={(max - min) / 100}
+          value={value}
+          onChange={(e) => onChange(parseFloat(e.target.value))}
+          className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+        />
       </div>
+    </div>
+  );
+}
+
+// ─── Stepper for integer engine params ───────────────────────────────────────
+
+function Stepper({
+  value,
+  min,
+  max,
+  step,
+  onChange,
+  decimals,
+  unit,
+}: {
+  value: number;
+  min: number;
+  max: number;
+  step: number;
+  onChange: (v: number) => void;
+  decimals: number;
+  unit: string;
+}) {
+  const dec = () => onChange(Math.max(min, parseFloat((value - step).toFixed(decimals))));
+  const inc = () => onChange(Math.min(max, parseFloat((value + step).toFixed(decimals))));
+  return (
+    <div className="flex items-center gap-2">
+      <button
+        onClick={dec}
+        className="h-7 w-7 rounded-full text-[15px] leading-none text-[var(--color-ink-70)] transition-colors hover:bg-[var(--color-paper-alt)]"
+        style={{ border: "1px solid var(--color-ink-15)" }}
+      >
+        −
+      </button>
+      <span
+        className="min-w-[62px] text-center text-[12px] text-[var(--color-ink)]"
+        style={{ fontFamily: "var(--font-mono)" }}
+      >
+        {value.toFixed(decimals)}
+        {unit}
+      </span>
+      <button
+        onClick={inc}
+        className="h-7 w-7 rounded-full text-[15px] leading-none text-[var(--color-ink-70)] transition-colors hover:bg-[var(--color-paper-alt)]"
+        style={{ border: "1px solid var(--color-ink-15)" }}
+      >
+        +
+      </button>
     </div>
   );
 }
@@ -263,22 +200,24 @@ function InfoModal({
 }) {
   return (
     <div
-      className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-6"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--color-ink)]/40 p-6 backdrop-blur-sm"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-md max-h-[80vh] bg-[#111827] rounded-2xl p-5 border border-white/[0.08]"
+        className="w-full max-w-md rounded-[20px] bg-[var(--color-ivory)] p-5"
+        style={{ border: "1px solid var(--color-ink-08)" }}
         onClick={(e) => e.stopPropagation()}
       >
-        <h3 className="text-[17px] font-bold text-cyan-400 mb-3">{title}</h3>
-        <div className="overflow-y-auto max-h-80">
-          <p className="text-sm text-slate-400 leading-relaxed whitespace-pre-line">
-            {text}
-          </p>
-        </div>
+        <h3
+          className="mb-2 text-[var(--color-ink)]"
+          style={{ fontFamily: "var(--font-serif)", fontSize: 22, letterSpacing: "-0.3px", lineHeight: 1.15 }}
+        >
+          {title}
+        </h3>
+        <p className="text-[13px] leading-[1.5] text-[var(--color-ink-70)] whitespace-pre-line">{text}</p>
         <button
           onClick={onClose}
-          className="mt-4 w-full py-2.5 bg-gradient-to-r from-indigo-600 to-indigo-500 hover:shadow-indigo-500/30 rounded-xl text-white font-bold text-[15px] transition-all shadow-lg shadow-indigo-500/20"
+          className="mt-4 w-full rounded-[12px] bg-[var(--color-ink)] py-2.5 text-[13px] font-medium text-[var(--color-ivory)]"
         >
           Fermer
         </button>
@@ -287,82 +226,28 @@ function InfoModal({
   );
 }
 
-// ─── SectionHeader ───────────────────────────────────────────────────────────
+// ─── Section header ──────────────────────────────────────────────────────────
 
-function SectionHeader({
-  title,
-  subtitle,
-}: {
-  title: string;
-  subtitle?: string;
-}) {
+function SectionHeader({ roman, title }: { roman: string; title: string }) {
   return (
-    <div className="mt-6 mb-3 pl-1">
-      <h2 className="text-[13px] font-bold text-cyan-400 uppercase tracking-widest">
-        {title}
-      </h2>
-      {subtitle && (
-        <p className="mt-0.5 text-xs text-slate-500 leading-relaxed">
-          {subtitle}
-        </p>
-      )}
+    <div className="px-7 pt-5 pb-1.5">
+      <span className="text-[10px] uppercase text-[var(--color-accent-ink)]" style={{ letterSpacing: "0.12em", fontWeight: 500 }}>
+        {roman}. {title}
+      </span>
     </div>
   );
 }
 
-// ─── AUCard ──────────────────────────────────────────────────────────────────
+// ─── Info icon ───────────────────────────────────────────────────────────────
 
-function AUCard({
-  meta,
-  thresholds,
-  onChange,
-  onInfo,
-}: {
-  meta: AUMeta;
-  thresholds: CalibrationThresholds;
-  onChange: (
-    key: keyof CalibrationThresholds,
-    field: "baseline" | "range",
-    v: number
-  ) => void;
-  onInfo: (meta: AUMeta) => void;
-}) {
-  const t = thresholds[meta.key];
+function InfoIcon({ onClick }: { onClick: () => void }) {
   return (
-    <div className="border border-white/[0.06] bg-white/[0.03] rounded-xl p-3.5 mb-2.5">
-      <div className="flex items-center mb-3.5">
-        <span className="bg-gradient-to-r from-indigo-600 to-indigo-500 text-white text-xs font-bold px-2 py-0.5 rounded-md mr-2.5">
-          {meta.number}
-        </span>
-        <span className="flex-1 text-[15px] font-semibold text-slate-100">
-          {meta.label}
-        </span>
-        <button
-          onClick={() => onInfo(meta)}
-          className="p-1 text-cyan-400 hover:text-cyan-300 text-lg"
-        >
-          &#x2139;
-        </button>
-      </div>
-      <ValueRow
-        label="Ligne de repos"
-        value={t.baseline}
-        min={meta.baselineRange[0]}
-        max={meta.baselineRange[1]}
-        step={meta.step}
-        decimals={2}
-        onChange={(v) => onChange(meta.key, "baseline", v)}
-      />
-      <ValueRow
-        label="Plage de detection"
-        value={t.range}
-        min={meta.rangeRange[0]}
-        max={meta.rangeRange[1]}
-        step={meta.step}
-        decimals={2}
-        onChange={(v) => onChange(meta.key, "range", v)}
-      />
-    </div>
+    <button onClick={onClick} className="p-1 text-[var(--color-ink-30)] transition-colors hover:text-[var(--color-ink-70)]">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="9" />
+        <path d="M12 11v6M12 8v.01" />
+      </svg>
+    </button>
   );
 }
 
@@ -372,7 +257,6 @@ export default function SettingsPage() {
   const router = useRouter();
 
   const [settings, setSettings] = useState<AppSettings>(() => {
-    // loadSettings uses localStorage - safe in "use client"
     try {
       const s = loadSettings();
       return JSON.parse(JSON.stringify(s)) as AppSettings;
@@ -381,18 +265,10 @@ export default function SettingsPage() {
     }
   });
 
-  const [infoModal, setInfoModal] = useState<{
-    title: string;
-    text: string;
-  } | null>(null);
+  const [infoModal, setInfoModal] = useState<{ title: string; text: string } | null>(null);
 
-  // ── AU threshold changes ───────────────────────────────────────────────────
   const handleAUChange = useCallback(
-    (
-      key: keyof CalibrationThresholds,
-      field: "baseline" | "range",
-      v: number
-    ) => {
+    (key: keyof CalibrationThresholds, field: "baseline" | "range", v: number) => {
       setSettings((prev) => ({
         ...prev,
         thresholds: {
@@ -401,156 +277,167 @@ export default function SettingsPage() {
         },
       }));
     },
-    []
+    [],
   );
 
-  // ── Engine param changes ───────────────────────────────────────────────────
   const handleEngineChange = useCallback(
     (field: keyof Omit<AppSettings, "thresholds">, v: number) => {
       setSettings((prev) => ({ ...prev, [field]: v }));
     },
-    []
+    [],
   );
 
-  const openAUInfo = useCallback((meta: AUMeta) => {
-    setInfoModal({
-      title: `${meta.number} - ${meta.label}`,
-      text: meta.description,
-    });
-  }, []);
-
-  const openEngineInfo = useCallback((param: EngineMeta) => {
-    setInfoModal({ title: param.label, text: param.description });
-  }, []);
-
-  // ── Save ───────────────────────────────────────────────────────────────────
   const handleSave = useCallback(() => {
     saveSettings(settings);
-    window.alert(
-      "Paramètres enregistrés.\nLes nouveaux réglages seront appliqués au prochain monitoring."
-    );
+    window.alert("Paramètres enregistrés.\nLes nouveaux réglages seront appliqués au prochain monitoring.");
     router.back();
   }, [settings, router]);
 
-  // ── Reset ──────────────────────────────────────────────────────────────────
   const handleReset = useCallback(() => {
-    const ok = window.confirm(
-      "Réinitialiser les paramètres ?\nTous les réglages reviendront aux valeurs par défaut."
-    );
+    const ok = window.confirm("Réinitialiser les paramètres ?\nTous les réglages reviendront aux valeurs par défaut.");
     if (!ok) return;
     resetSettings();
-    setSettings(
-      JSON.parse(JSON.stringify(DEFAULT_APP_SETTINGS)) as AppSettings
-    );
+    setSettings(JSON.parse(JSON.stringify(DEFAULT_APP_SETTINGS)) as AppSettings);
   }, []);
 
+  const calibrationParam = ENGINE_PARAMS.find((p) => p.field === "calibrationDurationSec")!;
+
   return (
-    <div className="flex flex-1 flex-col min-h-0 bg-[#0a0e1a]">
-      <div className="flex-1 min-h-0 overflow-y-auto px-4 pt-2 pb-28 max-w-2xl mx-auto w-full">
-        {/* Back link */}
-        <button
-          onClick={() => router.back()}
-          className="text-sm text-indigo-400 hover:text-indigo-300 mb-2 mt-3 flex items-center gap-1"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="15 18 9 12 15 6" />
-          </svg>
-          Retour
-        </button>
+    <div className="flex flex-1 flex-col min-h-0 bg-[var(--color-ivory)]">
+      <div className="flex-1 min-h-0 overflow-y-auto pb-28">
+        {/* Top bar + title */}
+        <div className="px-5 pt-3 pb-2">
+          <button
+            type="button"
+            onClick={() => router.back()}
+            className="flex items-center gap-1 text-[var(--color-ink-70)] text-[14px]"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+              <path d="M15 6l-6 6 6 6" />
+            </svg>
+            Retour
+          </button>
+          <h1 className="mt-2 text-[var(--color-ink)]" style={{ fontFamily: "var(--font-serif)", fontSize: 32, letterSpacing: "-0.4px", lineHeight: 1 }}>
+            Paramètres
+          </h1>
+          <p className="mt-1.5 text-[12.5px] text-[var(--color-ink-50)]">
+            Calibration · lissage · seuils FACS
+          </p>
+        </div>
 
-        <h1 className="text-xl font-bold text-white mb-1">Paramètres</h1>
+        {/* Section I — Action Units */}
+        <SectionHeader roman="I" title="Seuils des Action Units" />
+        <div className="px-7 pb-2 text-[12px] leading-[1.5] text-[var(--color-ink-50)]">
+          Remplacés automatiquement lors de la calibration visage neutre.
+        </div>
 
-        {/* ─── Seuils AU ─────────────────────────────────────── */}
-        <SectionHeader
-          title="Seuils d'Action Units"
-          subtitle="Calibration manuelle fine - remplacee par la calibration automatique si effectuee depuis l'ecran de monitoring."
-        />
+        <div className="px-5">
+          {AU_LIST.map((meta, i) => {
+            const t = settings.thresholds[meta.key];
+            return (
+              <div
+                key={meta.key}
+                className="py-3.5"
+                style={{ borderBottom: i < AU_LIST.length - 1 ? "1px solid var(--color-ink-rule)" : "none" }}
+              >
+                <div className="mb-2.5 flex items-baseline gap-2.5">
+                  <span
+                    className="w-[38px] text-[10px] font-semibold text-[var(--color-accent-ink)]"
+                    style={{ fontFamily: "var(--font-mono)" }}
+                  >
+                    {meta.number}
+                  </span>
+                  <span className="text-[13.5px] font-medium text-[var(--color-ink)]">{meta.label}</span>
+                  <div className="flex-1" />
+                  <InfoIcon onClick={() => setInfoModal({ title: `${meta.number} — ${meta.label}`, text: meta.description })} />
+                </div>
+                <div className="flex gap-5">
+                  <Slider
+                    label="Repos"
+                    value={t.baseline}
+                    min={meta.baselineRange[0]}
+                    max={meta.baselineRange[1]}
+                    onChange={(v) => handleAUChange(meta.key, "baseline", parseFloat(v.toFixed(2)))}
+                  />
+                  <Slider
+                    label="Plage"
+                    value={t.range}
+                    min={meta.rangeRange[0]}
+                    max={meta.rangeRange[1]}
+                    onChange={(v) => handleAUChange(meta.key, "range", parseFloat(v.toFixed(2)))}
+                  />
+                </div>
+              </div>
+            );
+          })}
+        </div>
 
-        {AU_LIST.map((meta) => (
-          <AUCard
-            key={meta.key}
-            meta={meta}
-            thresholds={settings.thresholds}
-            onChange={handleAUChange}
-            onInfo={openAUInfo}
-          />
-        ))}
-
-        {/* ─── Moteur de douleur ──────────────────────────────── */}
-        <SectionHeader
-          title="Moteur de douleur"
-          subtitle="Lissage, detection de spikes et alertes sonores."
-        />
-
-        <div className="border border-white/[0.06] bg-white/[0.03] rounded-xl p-3.5 mb-2.5">
-          {ENGINE_PARAMS.filter(
-            (p) => p.field !== "calibrationDurationSec"
-          ).map((param) => (
-            <ValueRow
+        {/* Section II — Moteur de douleur */}
+        <SectionHeader roman="II" title="Moteur de douleur" />
+        <div className="px-5">
+          {ENGINE_PARAMS.filter((p) => p.field !== "calibrationDurationSec").map((param, i, arr) => (
+            <div
               key={param.field}
-              label={param.label}
-              value={settings[param.field] as number}
-              min={param.min}
-              max={param.max}
-              step={param.step}
-              decimals={param.decimals}
-              unit={param.unit}
-              onChange={(v) => handleEngineChange(param.field, v)}
-              onInfo={() => openEngineInfo(param)}
-            />
+              className="flex items-center py-3"
+              style={{ borderBottom: i < arr.length - 1 ? "1px solid var(--color-ink-rule)" : "none" }}
+            >
+              <span className="text-[14px] text-[var(--color-ink)]">{param.label}</span>
+              <div className="flex-1" />
+              <Stepper
+                value={settings[param.field] as number}
+                min={param.min}
+                max={param.max}
+                step={param.step}
+                decimals={param.decimals}
+                unit={param.unit}
+                onChange={(v) => handleEngineChange(param.field, v)}
+              />
+              <InfoIcon onClick={() => setInfoModal({ title: param.label, text: param.description })} />
+            </div>
           ))}
         </div>
 
-        {/* ─── Calibration ────────────────────────────────────── */}
-        <SectionHeader
-          title="Calibration automatique"
-          subtitle="Duree de la phase de visage neutre."
-        />
-
-        <div className="border border-white/[0.06] bg-white/[0.03] rounded-xl p-3.5 mb-2.5">
-          {ENGINE_PARAMS.filter(
-            (p) => p.field === "calibrationDurationSec"
-          ).map((param) => (
-            <ValueRow
-              key={param.field}
-              label={param.label}
-              value={settings[param.field] as number}
-              min={param.min}
-              max={param.max}
-              step={param.step}
-              decimals={param.decimals}
-              unit={param.unit}
-              onChange={(v) => handleEngineChange(param.field, v)}
-              onInfo={() => openEngineInfo(param)}
+        {/* Section III — Calibration */}
+        <SectionHeader roman="III" title="Calibration" />
+        <div className="px-5 pb-4">
+          <div className="flex items-center py-3" style={{ borderBottom: "1px solid var(--color-ink-rule)" }}>
+            <span className="text-[14px] text-[var(--color-ink)]">{calibrationParam.label}</span>
+            <div className="flex-1" />
+            <Stepper
+              value={settings.calibrationDurationSec}
+              min={calibrationParam.min}
+              max={calibrationParam.max}
+              step={calibrationParam.step}
+              decimals={calibrationParam.decimals}
+              unit={calibrationParam.unit}
+              onChange={(v) => handleEngineChange("calibrationDurationSec", v)}
             />
-          ))}
+            <InfoIcon onClick={() => setInfoModal({ title: calibrationParam.label, text: calibrationParam.description })} />
+          </div>
         </div>
       </div>
 
-      {/* ─── Sticky bottom bar ──────────────────────────────── */}
-      <div className="fixed bottom-0 left-0 right-0 bg-[#0a0e1a] border-t border-white/[0.06] p-4 pb-8 flex gap-3 max-w-2xl mx-auto">
+      {/* Sticky bottom bar */}
+      <div
+        className="fixed bottom-0 left-0 right-0 flex gap-2.5 bg-[var(--color-ivory)] px-5 pb-8 pt-3"
+        style={{ borderTop: "1px solid var(--color-ink-08)" }}
+      >
         <button
           onClick={handleReset}
-          className="flex-1 py-3.5 rounded-xl border border-red-500/30 bg-red-500/10 text-red-400 font-semibold text-[15px] hover:bg-red-500/20 transition-colors"
+          className="flex-1 rounded-[14px] py-3 text-[13.5px] font-medium text-[var(--color-ink)] transition-colors"
+          style={{ border: "1px solid var(--color-ink-15)" }}
         >
           Réinitialiser
         </button>
         <button
           onClick={handleSave}
-          className="flex-[2] py-3.5 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-500 text-white font-bold text-[15px] shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/30 transition-all"
+          className="flex-[2] rounded-[14px] bg-[var(--color-ink)] py-3 text-[13.5px] font-medium text-[var(--color-ivory)]"
         >
           Enregistrer
         </button>
       </div>
 
-      {/* ─── Info modal ─────────────────────────────────────── */}
-      {infoModal && (
-        <InfoModal
-          title={infoModal.title}
-          text={infoModal.text}
-          onClose={() => setInfoModal(null)}
-        />
-      )}
+      {infoModal && <InfoModal title={infoModal.title} text={infoModal.text} onClose={() => setInfoModal(null)} />}
     </div>
   );
 }

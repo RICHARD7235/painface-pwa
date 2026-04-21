@@ -2,10 +2,10 @@
 
 /**
  * PatientsPage -- Liste des patients avec recherche et ajout.
- * Theme: Premium Dark Medical Tech
+ * Theme: Clinical / éditorial — ivory + ink + clinical blue.
  */
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -17,18 +17,19 @@ import type { PatientWithLastSession } from '../../types/patient';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-function formatDate(ts: number): string {
-  return new Intl.DateTimeFormat('fr-FR', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  }).format(new Date(ts));
+function pspiHex(score: number): string {
+  if (score <= 4) return 'var(--color-pspi-green)';
+  if (score <= 8) return 'var(--color-pspi-amber)';
+  return 'var(--color-pspi-rose)';
 }
 
-function pspiColor(score: number): string {
-  if (score <= 4) return 'text-emerald-400';
-  if (score <= 8) return 'text-amber-400';
-  return 'text-red-400';
+function relativeLabel(ts: number): string {
+  const diffH = (Date.now() - ts) / 3_600_000;
+  if (diffH < 1) return `${Math.max(1, Math.round(diffH * 60))} min`;
+  if (diffH < 24) return `${Math.round(diffH)} h`;
+  const diffD = diffH / 24;
+  if (diffD < 7) return `${Math.round(diffD)} j.`;
+  return `${Math.round(diffD / 7)} sem.`;
 }
 
 // ── AddPatientModal ──────────────────────────────────────────────────────────
@@ -40,7 +41,7 @@ interface AddPatientModalProps {
 }
 
 const inputClasses =
-  'mb-3 w-full rounded-xl border border-white/[0.08] bg-white/[0.05] px-4 py-3 text-[15px] text-white placeholder:text-slate-500 focus:border-indigo-500/60 focus:outline-none focus:ring-1 focus:ring-indigo-500/40 transition-colors';
+  'mb-3 w-full rounded-xl border border-[var(--color-ink-15)] bg-[var(--color-paper)] px-4 py-3 text-[15px] text-[var(--color-ink)] placeholder:text-[var(--color-ink-50)] focus:border-[var(--color-accent)] focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)]/30 transition-colors';
 
 function AddPatientModal({ visible, onClose, onSaved }: AddPatientModalProps) {
   const [nom, setNom] = useState('');
@@ -86,10 +87,13 @@ function AddPatientModal({ visible, onClose, onSaved }: AddPatientModalProps) {
   if (!visible) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm">
-      <div className="w-full max-w-lg rounded-t-2xl border-t border-white/[0.08] bg-[#111827] p-6 pb-8 animate-in slide-in-from-bottom">
-        <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-white/[0.12]" />
-        <h2 className="mb-5 text-lg font-bold text-white">
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-[var(--color-ink)]/40 backdrop-blur-sm">
+      <div className="w-full max-w-lg rounded-t-3xl border-t border-[var(--color-ink-08)] bg-[var(--color-ivory)] p-6 pb-8 animate-slide-up">
+        <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-[var(--color-ink-15)]" />
+        <h2
+          className="mb-5 text-[var(--color-ink)]"
+          style={{ fontFamily: 'var(--font-serif)', fontSize: 26, letterSpacing: '-0.3px', lineHeight: 1 }}
+        >
           Nouveau patient
         </h2>
 
@@ -128,7 +132,7 @@ function AddPatientModal({ visible, onClose, onSaved }: AddPatientModalProps) {
           <button
             type="button"
             onClick={onClose}
-            className="flex-1 rounded-xl border border-white/[0.08] bg-white/[0.04] py-3.5 text-[15px] font-semibold text-slate-400 hover:bg-white/[0.08] transition-colors"
+            className="flex-1 rounded-xl border border-[var(--color-ink-15)] bg-transparent py-3.5 text-[14px] font-medium text-[var(--color-ink)] transition-colors hover:bg-[var(--color-paper-alt)]"
           >
             Annuler
           </button>
@@ -136,7 +140,7 @@ function AddPatientModal({ visible, onClose, onSaved }: AddPatientModalProps) {
             type="button"
             onClick={handleSave}
             disabled={saving}
-            className="flex-[2] rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-500 py-3.5 text-[15px] font-bold text-white shadow-lg shadow-indigo-600/20 hover:from-indigo-500 hover:to-indigo-400 disabled:opacity-50 transition-all"
+            className="flex-[2] rounded-xl bg-[var(--color-ink)] py-3.5 text-[14px] font-medium text-[var(--color-ivory)] transition-all disabled:opacity-50"
           >
             {saving ? 'Création...' : 'Créer'}
           </button>
@@ -162,52 +166,71 @@ function PatientRow({ patient, onDelete }: PatientRowProps) {
     if (ok) onDelete();
   }
 
+  const initiales =
+    (patient.prenom[0] ?? '').toUpperCase() + (patient.nom[0] ?? '').toUpperCase();
+
   return (
     <Link
       href={`/patients/${patient.id}`}
-      className="group flex items-center rounded-xl border border-white/[0.06] bg-white/[0.03] px-4 py-3.5 transition-all hover:bg-white/[0.06] hover:border-white/[0.10]"
+      className="flex items-center gap-3.5 px-5 py-3.5 no-underline"
+      style={{ borderBottom: '1px solid var(--color-ink-rule)' }}
       onContextMenu={handleContextMenu}
     >
-      {/* Avatar initiales */}
-      <div className="mr-3.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-cyan-400 shadow-md shadow-indigo-500/20">
-        <span className="text-sm font-bold text-white">
-          {(patient.prenom[0] ?? '').toUpperCase() + (patient.nom[0] ?? '').toUpperCase()}
-        </span>
+      <div
+        className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-full bg-[var(--color-paper-alt)] text-[var(--color-ink)]"
+        style={{
+          border: '1px solid var(--color-ink-08)',
+          fontFamily: 'var(--font-serif)',
+          fontSize: 16,
+        }}
+      >
+        {initiales}
       </div>
 
-      {/* Infos */}
       <div className="min-w-0 flex-1">
-        <p className="text-[15px] font-semibold text-white truncate">
-          {patient.prenom} {patient.nom}
-        </p>
-        {patient.lastSessionDate ? (
-          <p className="text-xs text-slate-400">
-            Dernière séance : {formatDate(patient.lastSessionDate)}
-          </p>
-        ) : (
-          <p className="text-xs text-slate-500">Aucune séance</p>
-        )}
-        <p className="text-xs text-slate-500">
-          {patient.sessionCount} séance{patient.sessionCount > 1 ? 's' : ''}
-        </p>
+        <div
+          className="text-[15px] font-medium text-[var(--color-ink)]"
+          style={{ letterSpacing: '-0.2px' }}
+        >
+          {patient.prenom}{' '}
+          <span className="font-normal text-[var(--color-ink-50)]">{patient.nom}</span>
+        </div>
+        <div className="mt-[2px] flex items-center gap-2" style={{ fontFamily: 'var(--font-mono)' }}>
+          <span className="text-[11px] text-[var(--color-ink-50)]">
+            {patient.sessionCount} séance{patient.sessionCount > 1 ? 's' : ''}
+          </span>
+          {patient.lastSessionDate != null && (
+            <>
+              <span className="text-[11px] text-[var(--color-ink-30)]">·</span>
+              <span className="text-[11px] text-[var(--color-ink-50)]">
+                dernière {relativeLabel(patient.lastSessionDate)}
+              </span>
+            </>
+          )}
+        </div>
       </div>
 
-      {/* PSPI moyen */}
       {patient.lastSessionPspi != null && (
-        <div className="mr-3 flex flex-col items-center">
-          <span className={`text-lg font-bold ${pspiColor(patient.lastSessionPspi)}`}>
+        <div className="text-right">
+          <div
+            style={{
+              fontFamily: 'var(--font-serif)',
+              fontSize: 22,
+              color: pspiHex(patient.lastSessionPspi),
+              lineHeight: 1,
+              letterSpacing: '-0.01em',
+            }}
+          >
             {patient.lastSessionPspi.toFixed(1)}
-          </span>
-          <span className="text-[9px] uppercase tracking-wider text-slate-500">
-            PSPI moy.
-          </span>
+          </div>
+          <div
+            className="mt-[2px] text-[9px] uppercase text-[var(--color-ink-30)]"
+            style={{ letterSpacing: '0.1em' }}
+          >
+            PSPI moy
+          </div>
         </div>
       )}
-
-      {/* Chevron */}
-      <span className="text-xl text-slate-600 group-hover:text-slate-400 transition-colors">
-        &#8250;
-      </span>
     </Link>
   );
 }
@@ -220,6 +243,7 @@ export default function PatientsPage() {
   const [query, setQuery] = useState('');
   const [showAdd, setShowAdd] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [tab, setTab] = useState<'all' | 'active' | 'archived'>('all');
 
   const loadPatients = useCallback(async () => {
     try {
@@ -232,7 +256,6 @@ export default function PatientsPage() {
     }
   }, []);
 
-  // Chargement initial + rechargement quand la page redevient visible
   useEffect(() => {
     loadPatients();
     const handleVisibility = () => {
@@ -243,11 +266,27 @@ export default function PatientsPage() {
       document.removeEventListener('visibilitychange', handleVisibility);
   }, [loadPatients]);
 
-  const filtered = query.trim()
-    ? patients.filter((p) =>
-        `${p.prenom} ${p.nom}`.toLowerCase().includes(query.toLowerCase()),
-      )
-    : patients;
+  const filtered = useMemo(() => {
+    const base = query.trim()
+      ? patients.filter((p) =>
+          `${p.prenom} ${p.nom}`.toLowerCase().includes(query.toLowerCase()),
+        )
+      : patients;
+    if (tab === 'active') {
+      return base.filter(
+        (p) => p.lastSessionDate != null && Date.now() - p.lastSessionDate < 7 * 86_400_000,
+      );
+    }
+    return base;
+  }, [patients, query, tab]);
+
+  const activeCount = useMemo(
+    () =>
+      patients.filter(
+        (p) => p.lastSessionDate != null && Date.now() - p.lastSessionDate < 7 * 86_400_000,
+      ).length,
+    [patients],
+  );
 
   async function handleDelete(id: string) {
     try {
@@ -260,74 +299,94 @@ export default function PatientsPage() {
   }
 
   return (
-    <div className="relative flex flex-1 flex-col overflow-auto bg-[#0a0e1a]">
-      {/* Header */}
-      <div className="px-5 pt-6 pb-2">
-        <h1 className="text-2xl font-bold text-white">Patients</h1>
-        <p className="mt-0.5 text-sm text-slate-400">
-          Suivi de la douleur par reconnaissance faciale
+    <div className="relative flex flex-1 flex-col overflow-auto bg-[var(--color-ivory)]">
+      {/* Editorial top bar */}
+      <div className="px-5 pt-3 pb-3">
+        <h1
+          className="text-[var(--color-ink)]"
+          style={{ fontFamily: 'var(--font-serif)', fontSize: 32, letterSpacing: '-0.4px', lineHeight: 1 }}
+        >
+          Patients
+        </h1>
+        <p className="mt-2 text-[12.5px] text-[var(--color-ink-50)]">
+          {patients.length} dossier{patients.length > 1 ? 's' : ''} · {activeCount} actif
+          {activeCount > 1 ? 's' : ''} cette semaine
         </p>
       </div>
 
-      {/* Barre de recherche */}
-      <div className="px-5 py-3">
-        <div className="relative">
-          <svg
-            className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500"
-            fill="none"
-            viewBox="0 0 24 24"
-            strokeWidth={2}
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"
-            />
+      {/* Search */}
+      <div className="px-5 pb-3">
+        <div className="flex items-center gap-2.5 rounded-full bg-[var(--color-paper)] px-4 py-2.5"
+             style={{ border: '1px solid var(--color-ink-08)' }}>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className="text-[var(--color-ink-50)]">
+            <circle cx="11" cy="11" r="6.5" />
+            <path d="M16 16l4 4" />
           </svg>
           <input
             type="search"
-            placeholder="Rechercher un patient..."
-            className="w-full rounded-xl border border-white/[0.08] bg-white/[0.04] py-2.5 pl-10 pr-4 text-[15px] text-white placeholder:text-slate-500 focus:border-indigo-500/50 focus:outline-none focus:ring-1 focus:ring-indigo-500/30 transition-colors"
+            placeholder="Rechercher un patient"
+            className="flex-1 bg-transparent text-[14px] text-[var(--color-ink)] placeholder:text-[var(--color-ink-50)] outline-none"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
         </div>
       </div>
 
-      {/* Liste */}
-      <div className="flex-1 px-5 pb-24">
+      {/* Segmented tabs */}
+      <div
+        className="flex gap-5 px-5 pb-0"
+        style={{ borderBottom: '1px solid var(--color-ink-rule)' }}
+      >
+        {(
+          [
+            ['all', 'Tous', patients.length],
+            ['active', 'Actifs', activeCount],
+            ['archived', 'Archivés', 0],
+          ] as const
+        ).map(([key, label, count]) => {
+          const active = tab === key;
+          return (
+            <button
+              key={key}
+              type="button"
+              onClick={() => setTab(key)}
+              className="pb-2.5 pt-2.5 text-[13px]"
+              style={{
+                fontWeight: 500,
+                color: active ? 'var(--color-ink)' : 'var(--color-ink-50)',
+                borderBottom: active ? '2px solid var(--color-ink)' : '2px solid transparent',
+              }}
+            >
+              {label}
+              <span className="ml-1.5 text-[var(--color-ink-30)]">{count}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* List */}
+      <div className="flex-1 pb-24">
         {loading ? (
           <div className="flex flex-col items-center pt-16">
-            <div className="h-8 w-8 animate-spin rounded-full border-2 border-indigo-500/30 border-t-indigo-500" />
-            <p className="mt-4 text-sm text-slate-500">Chargement...</p>
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-[var(--color-ink-15)] border-t-[var(--color-ink)]" />
+            <p className="mt-4 text-sm text-[var(--color-ink-50)]">Chargement...</p>
           </div>
         ) : filtered.length === 0 ? (
-          <div className="flex flex-col items-center pt-16">
-            <svg
-              className="mb-4 h-16 w-16 text-slate-700"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth={1}
-              stroke="currentColor"
+          <div className="flex flex-col items-center pt-16 px-5 text-center">
+            <p
+              className="text-[17px] text-[var(--color-ink)]"
+              style={{ fontFamily: 'var(--font-serif)', letterSpacing: '-0.3px' }}
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"
-              />
-            </svg>
-            <p className="text-[17px] font-semibold text-slate-500">
               {query ? 'Aucun patient trouvé' : 'Aucun patient enregistré'}
             </p>
             {!query && (
-              <p className="mt-2 text-sm text-slate-600">
+              <p className="mt-2 text-[13px] text-[var(--color-ink-50)]">
                 Appuyez sur + pour ajouter un patient
               </p>
             )}
           </div>
         ) : (
-          <div className="flex flex-col gap-2.5">
+          <div>
             {filtered.map((patient) => (
               <PatientRow
                 key={patient.id}
@@ -339,14 +398,17 @@ export default function PatientsPage() {
         )}
       </div>
 
-      {/* FAB Ajouter */}
+      {/* FAB — dark ink pill */}
       <button
         type="button"
         onClick={() => setShowAdd(true)}
-        className="fixed bottom-7 right-5 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-indigo-600 to-indigo-500 text-white shadow-lg shadow-indigo-600/30 hover:from-indigo-500 hover:to-indigo-400 active:scale-95 transition-all"
+        className="fixed bottom-7 right-5 flex h-[52px] w-[52px] items-center justify-center rounded-full bg-[var(--color-ink)] text-[var(--color-ivory)] transition-all active:scale-95"
+        style={{ boxShadow: '0 10px 28px rgba(20,23,28,0.25)' }}
         aria-label="Ajouter un patient"
       >
-        <span className="text-3xl font-light leading-none">+</span>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+          <path d="M12 5v14M5 12h14" />
+        </svg>
       </button>
 
       <AddPatientModal

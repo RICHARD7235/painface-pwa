@@ -3,9 +3,7 @@
 /**
  * CameraView -- Écran unifié caméra + monitoring PSPI.
  *
- * Layout : 60% caméra (haut) + 40% dashboard (bas).
- * Accepte ?patientId=xxx en query param pour lier la séance à un patient.
- * Sans patientId → séance anonyme.
+ * Layout clinical : zone caméra plein cadre (sombre) + dashboard ivoire en dock.
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -38,10 +36,15 @@ const QUICK_LABELS = [
 
 // ---- Helpers -----------------------------------------------------------------
 
+const PSPI_GREEN = "#4C7C5B";
+const PSPI_AMBER = "#B67A1F";
+const PSPI_ROSE = "#B04447";
+const ACCENT = "#2F4B8A";
+
 function pspiColor(score: number): string {
-  if (score <= 4) return "#22c55e";
-  if (score <= 8) return "#f59e0b";
-  return "#ef4444";
+  if (score <= 4) return PSPI_GREEN;
+  if (score <= 8) return PSPI_AMBER;
+  return PSPI_ROSE;
 }
 
 function pspiLabel(score: number): string {
@@ -54,9 +57,9 @@ function pspiLabel(score: number): string {
 
 function getStatusText(status: DetectionStatus): string {
   switch (status) {
-    case "loading": return "Chargement...";
+    case "loading": return "Chargement";
     case "no_face": return "Aucun visage";
-    case "detected": return "Visage détecté";
+    case "detected": return "Détection stable";
     case "partial": return "Partiellement visible";
     case "too_far": return "Trop loin";
     case "rotated": return "Tête tournée";
@@ -64,12 +67,12 @@ function getStatusText(status: DetectionStatus): string {
   }
 }
 
-function getStatusColor(status: DetectionStatus): string {
+function getStatusTint(status: DetectionStatus): string {
   switch (status) {
-    case "detected": return "#22c55e";
-    case "no_face": case "error": return "#ef4444";
-    case "partial": case "too_far": case "rotated": return "#f59e0b";
-    case "loading": return "#6b7280";
+    case "detected": return PSPI_GREEN;
+    case "no_face": case "error": return PSPI_ROSE;
+    case "partial": case "too_far": case "rotated": return PSPI_AMBER;
+    case "loading": return "#94a3b8";
   }
 }
 
@@ -77,8 +80,7 @@ function formatTime(sec: number): string {
   const h = Math.floor(sec / 3600);
   const m = Math.floor((sec % 3600) / 60);
   const s = sec % 60;
-  if (h > 0)
-    return `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+  if (h > 0) return `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
   return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
@@ -105,21 +107,7 @@ function spikeBeepFreq(score: number): number {
   return 440 + (score / PSPI_MAX) * 660;
 }
 
-// ---- SVG arc helpers ---------------------------------------------------------
-
-function polarToXY(cx: number, cy: number, r: number, deg: number) {
-  const rad = (deg * Math.PI) / 180;
-  return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
-}
-
-function arcPath(cx: number, cy: number, r: number, startDeg: number, endDeg: number): string {
-  const s = polarToXY(cx, cy, r, startDeg);
-  const e = polarToXY(cx, cy, r, endDeg);
-  const large = endDeg - startDeg > 180 ? 1 : 0;
-  return `M ${s.x.toFixed(2)} ${s.y.toFixed(2)} A ${r} ${r} 0 ${large} 1 ${e.x.toFixed(2)} ${e.y.toFixed(2)}`;
-}
-
-// ---- AU overlay --------------------------------------------------------------
+// ---- AU overlay (glass chip over camera) ------------------------------------
 
 const AU_ROWS: { key: keyof Omit<ActionUnitsResult, "timestamp">; label: string }[] = [
   { key: "au4", label: "AU4" },
@@ -129,8 +117,6 @@ const AU_ROWS: { key: keyof Omit<ActionUnitsResult, "timestamp">; label: string 
   { key: "au10", label: "AU10" },
   { key: "au43", label: "AU43" },
 ];
-
-const BAR_W = 48;
 
 const ZERO_AU: ActionUnitsResult = {
   au4: { au: 4, score: 0, intensity: null, raw: 0 },
@@ -143,26 +129,48 @@ const ZERO_AU: ActionUnitsResult = {
 };
 
 function auBarColor(score: number): string {
-  if (score === 0) return "#374151";
-  if (score <= 2) return "#22c55e";
-  if (score === 3) return "#f59e0b";
-  return "#ef4444";
+  if (score === 0) return "#2a3040";
+  if (score <= 2) return PSPI_GREEN;
+  if (score === 3) return PSPI_AMBER;
+  return PSPI_ROSE;
 }
 
 function AUBarsPanel({ aus }: { aus: ActionUnitsResult }) {
   return (
-    <div className="rounded-lg px-2.5 py-2" style={{ backgroundColor: "rgba(0,0,0,0.60)" }}>
+    <div
+      className="w-[128px] rounded-[12px] px-3 py-2.5"
+      style={{
+        background: "rgba(11,14,18,0.72)",
+        backdropFilter: "blur(14px)",
+        border: "1px solid rgba(255,255,255,0.08)",
+      }}
+    >
+      <div
+        className="mb-2 text-[9px] uppercase"
+        style={{ fontFamily: "var(--font-mono)", color: "rgba(255,255,255,0.5)", letterSpacing: "0.08em" }}
+      >
+        Action units
+      </div>
       {AU_ROWS.map(({ key, label }) => {
         const score = aus[key].score;
-        const fill = (score / 5) * BAR_W;
         const color = auBarColor(score);
         return (
-          <div key={key} className="my-0.5 flex items-center gap-1">
-            <span className="w-8 font-mono text-xs text-gray-300">{label}</span>
-            <div className="overflow-hidden rounded-sm" style={{ width: BAR_W, height: 6, backgroundColor: "#1f2937" }}>
-              <div className="rounded-sm" style={{ width: fill, height: 6, backgroundColor: color }} />
+          <div key={key} className="flex items-center gap-2 mb-[5px]">
+            <span
+              className="w-[26px] text-[10px]"
+              style={{ fontFamily: "var(--font-mono)", color: "rgba(255,255,255,0.7)" }}
+            >
+              {label}
+            </span>
+            <div className="flex-1 overflow-hidden rounded-sm" style={{ height: 3, background: "rgba(255,255,255,0.08)" }}>
+              <div style={{ width: `${(score / 5) * 100}%`, height: "100%", background: color }} />
             </div>
-            <span className="w-3 text-right font-mono text-xs font-bold" style={{ color }}>{score}</span>
+            <span
+              className="w-2 text-right text-[10px]"
+              style={{ fontFamily: "var(--font-mono)", color: "#fff" }}
+            >
+              {score}
+            </span>
           </div>
         );
       })}
@@ -170,61 +178,70 @@ function AUBarsPanel({ aus }: { aus: ActionUnitsResult }) {
   );
 }
 
-// ---- Sub-components ----------------------------------------------------------
+// ---- Glass pill badges -------------------------------------------------------
 
 function StatusBadge({ status }: { status: DetectionStatus }) {
   if (status === "loading") return null;
-  const color = getStatusColor(status);
+  const tint = getStatusTint(status);
   return (
-    <span
-      className="rounded-full px-3 py-1 text-[11px] font-semibold text-white backdrop-blur-md border border-white/10"
-      style={{ backgroundColor: color + "40", boxShadow: `0 0 12px ${color}30` }}
+    <div
+      className="px-3.5 py-1.5 rounded-full"
+      style={{
+        background: `${tint}26`,
+        backdropFilter: "blur(12px)",
+        border: `1px solid ${tint}59`,
+      }}
     >
-      {getStatusText(status)}
-    </span>
+      <span
+        className="text-[10.5px] uppercase"
+        style={{ fontFamily: "var(--font-mono)", color: tint === "#94a3b8" ? "#fff" : tint, letterSpacing: "0.06em" }}
+      >
+        ● {getStatusText(status)}
+      </span>
+    </div>
   );
 }
 
-function CircularGauge({ score }: { score: number }) {
-  const SIZE = 110;
-  const CX = SIZE / 2;
-  const CY = SIZE / 2 + 5;
-  const R = 40;
-  const STROKE = 8;
-  const START_DEG = 135;
-  const TOTAL_DEG = 270;
-  const progress = Math.min(score / PSPI_MAX, 0.9999);
-  const endDeg = START_DEG + progress * TOTAL_DEG;
-
-  const bgPath = arcPath(CX, CY, R, START_DEG, START_DEG + TOTAL_DEG * 0.9999);
-  const fgPath = progress > 0.005 ? arcPath(CX, CY, R, START_DEG, endDeg) : null;
-  const color = pspiColor(score);
-
-  // Glow filter
+function RecChip({ seconds }: { seconds: number }) {
   return (
-    <svg width={SIZE} height={SIZE} className="flex-shrink-0">
-      <defs>
-        <filter id="glow">
-          <feGaussianBlur stdDeviation="3" result="blur" />
-          <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
-        </filter>
-      </defs>
-      <path d={bgPath} stroke="#1a2744" strokeWidth={STROKE} fill="none" strokeLinecap="round" />
-      {fgPath && (
-        <path d={fgPath} stroke={color} strokeWidth={STROKE} fill="none" strokeLinecap="round" className="transition-all duration-300" filter="url(#glow)" />
-      )}
-      <text x={CX} y={CY - 2} textAnchor="middle" fontSize={22} fontWeight="800" fill={color} style={{ fontFamily: "monospace" }}>
-        {score.toFixed(1)}
-      </text>
-      <text x={CX} y={CY + 11} textAnchor="middle" fontSize={8} fill="#475569">
-        / {PSPI_MAX} PSPI
-      </text>
-      <text x={CX} y={CY + 22} textAnchor="middle" fontSize={9} fontWeight="600" fill={color}>
-        {pspiLabel(score)}
-      </text>
-    </svg>
+    <div
+      className="flex items-center gap-2 px-3 py-1.5 rounded-full"
+      style={{
+        background: "rgba(11,14,18,0.55)",
+        backdropFilter: "blur(12px)",
+        border: "1px solid rgba(255,255,255,0.08)",
+      }}
+    >
+      <span
+        className="inline-block h-[7px] w-[7px] rounded-full animate-pulse"
+        style={{ background: "#E74848", boxShadow: "0 0 8px #E74848" }}
+      />
+      <span className="text-[11px] text-white" style={{ fontFamily: "var(--font-mono)" }}>
+        REC · {formatTime(seconds)}
+      </span>
+    </div>
   );
 }
+
+function FpsChip({ fps }: { fps: number }) {
+  return (
+    <div
+      className="px-3 py-1.5 rounded-full"
+      style={{
+        background: "rgba(11,14,18,0.55)",
+        backdropFilter: "blur(12px)",
+        border: "1px solid rgba(255,255,255,0.08)",
+      }}
+    >
+      <span className="text-[11px]" style={{ fontFamily: "var(--font-mono)", color: "#9FB9E6" }}>
+        {fps}
+        <span className="ml-[3px]" style={{ color: "rgba(255,255,255,0.4)" }}>fps</span>
+      </span>
+    </div>
+  );
+}
+
+// ---- PainHistoryChart (dashboard) -------------------------------------------
 
 function PainHistoryChart({
   data, annotations, currentSec, chartWidth,
@@ -235,58 +252,40 @@ function PainHistoryChart({
   chartWidth: number;
 }) {
   const W = chartWidth;
-  const H = 60;
-  const PL = 20;
-  const PR = 4;
-  const PT = 4;
-  const PB = 12;
-  const CW = W - PL - PR;
-  const CH = H - PT - PB;
-
-  if (data.length < 2 || W < 10) return null;
-
+  const H = 88;
   const maxSec = currentSec;
   const minSec = maxSec - HISTORY_SEC;
-  const toX = (sec: number) => PL + ((sec - minSec) / HISTORY_SEC) * CW;
-  const toY = (s: number) => PT + CH - (s / PSPI_MAX) * CH;
+  const toX = (sec: number) => ((sec - minSec) / HISTORY_SEC) * W;
+  const toY = (s: number) => H - (s / PSPI_MAX) * (H - 4) - 2;
 
   const visible = data.filter((d) => d.sessionSec >= minSec - 1);
-  const points = visible
-    .map((d) => `${toX(d.sessionSec).toFixed(1)},${toY(d.score).toFixed(1)}`)
-    .join(" ");
-
-  const yZoneGreen = toY(4);
-  const yZoneMid = toY(8);
-  const yTop = PT;
-  const yBottom = PT + CH;
-
-  const visibleAnnots = annotations.filter(
-    (a) => a.sessionSec >= minSec && a.sessionSec <= maxSec,
-  );
+  if (W < 10) return null;
+  const points = visible.map((d) => `${toX(d.sessionSec).toFixed(1)},${toY(d.score).toFixed(1)}`).join(" ");
+  const visibleAnnots = annotations.filter((a) => a.sessionSec >= minSec && a.sessionSec <= maxSec);
 
   return (
-    <svg width={W} height={H} className="block">
-      <rect x={PL} y={yTop} width={CW} height={yZoneMid - yTop} fill="rgba(239,68,68,0.07)" />
-      <rect x={PL} y={yZoneMid} width={CW} height={yZoneGreen - yZoneMid} fill="rgba(245,158,11,0.07)" />
-      <rect x={PL} y={yZoneGreen} width={CW} height={yBottom - yZoneGreen} fill="rgba(34,197,94,0.07)" />
-      {[4, 8, 12].map((v) => (
-        <line key={v} x1={PL} y1={toY(v)} x2={PL + CW} y2={toY(v)} stroke="#1e3a5f" strokeWidth={0.5} strokeDasharray="3,4" />
+    <svg width={W} height={H} style={{ display: "block" }}>
+      {/* Color bands */}
+      <rect x="0" y="0" width={W} height={H * 0.25} fill={PSPI_ROSE} opacity={0.04} />
+      <rect x="0" y={H * 0.25} width={W} height={H * 0.25} fill={PSPI_AMBER} opacity={0.05} />
+      <rect x="0" y={H * 0.5} width={W} height={H * 0.5} fill={PSPI_GREEN} opacity={0.04} />
+      {/* Grid */}
+      {[0.25, 0.5, 0.75].map((r) => (
+        <line key={r} x1="0" y1={H * r} x2={W} y2={H * r} stroke="var(--color-ink-15)" strokeDasharray="2 3" strokeWidth={0.5} />
       ))}
-      {[0, 8, 16].map((v) => (
-        <text key={v} x={PL - 3} y={toY(v) + 4} textAnchor="end" fontSize={7} fill="#64748b">{v}</text>
-      ))}
-      <line x1={PL} y1={yBottom} x2={PL + CW} y2={yBottom} stroke="#1e3a5f" strokeWidth={0.5} />
-      <text x={PL} y={H - 1} fontSize={6} fill="#64748b">-{HISTORY_SEC}s</text>
-      <text x={PL + CW} y={H - 1} textAnchor="end" fontSize={6} fill="#64748b">now</text>
+      {/* Line */}
       {visible.length >= 2 && (
-        <polyline points={points} fill="none" stroke="#3b82f6" strokeWidth={1.8} strokeLinejoin="round" strokeLinecap="round" />
+        <polyline points={points} fill="none" stroke={ACCENT} strokeWidth={1.4} strokeLinejoin="round" strokeLinecap="round" />
       )}
+      {/* Annotation ticks */}
       {visibleAnnots.map((a) => (
-        <line key={a.id} x1={toX(a.sessionSec)} y1={PT} x2={toX(a.sessionSec)} y2={yBottom} stroke="#f8fafc" strokeWidth={1} strokeDasharray="2,3" opacity={0.6} />
+        <line key={a.id} x1={toX(a.sessionSec)} y1="0" x2={toX(a.sessionSec)} y2={H} stroke="var(--color-ink-30)" strokeDasharray="1 2" strokeWidth={0.5} />
       ))}
     </svg>
   );
 }
+
+// ---- Annotation modal (clinical light) ---------------------------------------
 
 function AnnotationModal({
   visible, currentSec, currentPspi, onSave, onCancel,
@@ -364,61 +363,131 @@ function AnnotationModal({
   if (!visible) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-      <div className="w-[90%] max-w-md rounded-2xl bg-[#13243d] p-5 shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0B0E12]/60 backdrop-blur-sm">
+      <div className="w-[90%] max-w-md rounded-[20px] bg-[var(--color-ivory)] p-5" style={{ border: "1px solid var(--color-ink-08)" }}>
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-base font-semibold text-slate-100">Marquer un événement</h3>
-          <span className="rounded-full px-2 py-0.5 text-xs font-bold" style={{ color: pspiColor(currentPspi), backgroundColor: "#1e3a5f" }}>
+          <h3
+            className="text-[var(--color-ink)]"
+            style={{ fontFamily: "var(--font-serif)", fontSize: 22, letterSpacing: "-0.3px" }}
+          >
+            Marquer un événement
+          </h3>
+          <span
+            className="px-2.5 py-0.5 rounded-full text-[11px]"
+            style={{
+              fontFamily: "var(--font-mono)",
+              color: pspiColor(currentPspi),
+              background: `${pspiColor(currentPspi)}14`,
+              border: `1px solid ${pspiColor(currentPspi)}33`,
+            }}
+          >
             PSPI {currentPspi.toFixed(1)}
           </span>
         </div>
         <div className="flex gap-2 mb-3">
-          {(["text", "voice"] as const).map((m) => (
-            <button key={m} className={`flex-1 rounded-lg py-1.5 text-sm font-medium transition ${mode === m ? "bg-indigo-600 text-white" : "bg-[#1e3a5f] text-slate-400"}`} onClick={() => setMode(m)}>
-              {m === "text" ? "Texte" : "Voix"}
-            </button>
-          ))}
+          {(["text", "voice"] as const).map((m) => {
+            const active = mode === m;
+            return (
+              <button
+                key={m}
+                className="flex-1 rounded-[10px] py-2 text-[13px]"
+                style={{
+                  background: active ? "var(--color-ink)" : "var(--color-paper)",
+                  color: active ? "var(--color-ivory)" : "var(--color-ink-70)",
+                  border: active ? "1px solid var(--color-ink)" : "1px solid var(--color-ink-15)",
+                  fontWeight: 500,
+                }}
+                onClick={() => setMode(m)}
+              >
+                {m === "text" ? "Texte" : "Voix"}
+              </button>
+            );
+          })}
         </div>
         {mode === "text" ? (
           <>
-            <div className="flex gap-1.5 overflow-x-auto pb-2 mb-2 scrollbar-hide">
-              {QUICK_LABELS.map((lbl) => (
-                <button key={lbl} className={`whitespace-nowrap rounded-full px-3 py-1 text-xs transition ${text === lbl ? "bg-indigo-600 text-white" : "bg-[#1e3a5f] text-slate-400"}`} onClick={() => setText(lbl)}>
-                  {lbl}
-                </button>
-              ))}
+            <div className="flex gap-1.5 overflow-x-auto pb-2 mb-2">
+              {QUICK_LABELS.map((lbl) => {
+                const active = text === lbl;
+                return (
+                  <button
+                    key={lbl}
+                    className="whitespace-nowrap rounded-full px-3 py-1 text-[12px]"
+                    style={{
+                      background: active ? "var(--color-ink)" : "transparent",
+                      color: active ? "var(--color-ivory)" : "var(--color-ink-70)",
+                      border: `1px solid ${active ? "var(--color-ink)" : "var(--color-ink-15)"}`,
+                    }}
+                    onClick={() => setText(lbl)}
+                  >
+                    {lbl}
+                  </button>
+                );
+              })}
             </div>
             <textarea
-              className="w-full rounded-lg border border-[#1e3a5f] bg-[#0b1628] p-2.5 text-sm text-slate-100 placeholder:text-slate-500 focus:border-indigo-500 focus:outline-none"
+              className="w-full rounded-[12px] border border-[var(--color-ink-15)] bg-[var(--color-paper)] p-3 text-[14px] text-[var(--color-ink)] placeholder:text-[var(--color-ink-50)] focus:border-[var(--color-accent)] focus:outline-none"
               placeholder="Ou saisissez une note libre..."
-              value={text} onChange={(e) => setText(e.target.value)} maxLength={200} rows={2}
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              maxLength={200}
+              rows={2}
             />
           </>
         ) : (
           <div className="flex flex-col items-center gap-3 py-4">
             {!recording && !audioBlob && (
-              <button className="flex items-center gap-2 rounded-full bg-[#1e3a5f] px-5 py-2.5 text-sm text-slate-200 transition hover:bg-[#2a4a6f]" onClick={handleStartRecording}>
-                <span className="inline-block h-3 w-3 rounded-full bg-red-500" />
+              <button
+                className="flex items-center gap-2 rounded-full bg-[var(--color-paper)] px-5 py-2.5 text-[13px] text-[var(--color-ink)]"
+                style={{ border: "1px solid var(--color-ink-15)" }}
+                onClick={handleStartRecording}
+              >
+                <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: PSPI_ROSE }} />
                 Appuyez pour enregistrer
               </button>
             )}
             {recording && (
-              <button className="flex items-center gap-2 rounded-full bg-red-600/30 px-5 py-2.5 text-sm text-red-300 animate-pulse transition" onClick={handleStopRecording}>
-                <span className="inline-block h-3 w-3 rounded-full bg-red-500" />
+              <button
+                className="flex items-center gap-2 rounded-full px-5 py-2.5 text-[13px] animate-pulse"
+                style={{
+                  background: `${PSPI_ROSE}14`,
+                  color: PSPI_ROSE,
+                  border: `1px solid ${PSPI_ROSE}33`,
+                }}
+                onClick={handleStopRecording}
+              >
+                <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: PSPI_ROSE }} />
                 Enregistrement... {formatTime(recDuration)}
               </button>
             )}
             {!recording && audioBlob && (
-              <div className="flex items-center gap-3 text-sm text-slate-300">
-                <span>Note vocale - {formatTime(recDuration)}</span>
-                <button className="text-indigo-400 underline" onClick={() => { setAudioBlob(null); setRecDuration(0); }}>Refaire</button>
+              <div className="flex items-center gap-3 text-[13px] text-[var(--color-ink-70)]">
+                <span>Note vocale · {formatTime(recDuration)}</span>
+                <button className="underline" style={{ color: ACCENT }} onClick={() => { setAudioBlob(null); setRecDuration(0); }}>
+                  Refaire
+                </button>
               </div>
             )}
           </div>
         )}
         <div className="mt-4 flex gap-3">
-          <button className="flex-1 rounded-lg border border-[#1e3a5f] py-2 text-sm text-slate-400 transition hover:bg-[#1e3a5f]" onClick={onCancel}>Annuler</button>
-          <button className={`flex-1 rounded-lg py-2 text-sm font-medium text-white transition ${canSave ? "bg-indigo-600 hover:bg-indigo-700" : "bg-indigo-600/40 cursor-not-allowed"}`} onClick={handleSave} disabled={!canSave}>Enregistrer</button>
+          <button
+            className="flex-1 rounded-[12px] border border-[var(--color-ink-15)] py-2.5 text-[13px] font-medium text-[var(--color-ink)]"
+            onClick={onCancel}
+          >
+            Annuler
+          </button>
+          <button
+            className="flex-1 rounded-[12px] py-2.5 text-[13px] font-medium text-[var(--color-ivory)] transition-all"
+            style={{
+              background: canSave ? "var(--color-ink)" : "var(--color-ink-30)",
+              cursor: canSave ? "pointer" : "not-allowed",
+            }}
+            onClick={handleSave}
+            disabled={!canSave}
+          >
+            Enregistrer
+          </button>
         </div>
       </div>
     </div>
@@ -460,8 +529,6 @@ export default function CameraView() {
     calibrationComplete,
   );
 
-  const gaugeScore = calibrationComplete ? (smoothedScore ?? 0) : 0;
-
   // Session timer
   const sessionStartRef = useRef(Date.now());
   const [sessionSec, setSessionSec] = useState(0);
@@ -470,7 +537,7 @@ export default function CameraView() {
     return () => clearInterval(id);
   }, []);
 
-  // History rolling buffer (display) + full buffer (save)
+  // History buffers
   const historyRef = useRef<PainDataPoint[]>([]);
   const fullHistoryRef = useRef<PainDataPoint[]>([]);
   const lastSampleRef = useRef(0);
@@ -537,7 +604,7 @@ export default function CameraView() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Video dimensions for overlay
+  // Video dimensions
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const handleVideoPlaying = useCallback(() => {
     const v = videoRef.current;
@@ -556,16 +623,16 @@ export default function CameraView() {
 
   // Chart width
   const dashRef = useRef<HTMLDivElement>(null);
-  const [chartWidth, setChartWidth] = useState(360);
+  const [chartWidth, setChartWidth] = useState(340);
   useEffect(() => {
     const ro = new ResizeObserver(([entry]) => {
-      if (entry) setChartWidth(entry.contentRect.width - 8);
+      if (entry) setChartWidth(entry.contentRect.width - 20);
     });
     if (dashRef.current) ro.observe(dashRef.current);
     return () => ro.disconnect();
   }, []);
 
-  // Save session and navigate
+  // Save session + navigate
   const handleStop = useCallback(async () => {
     stopDetection();
     stopCamera();
@@ -595,36 +662,44 @@ export default function CameraView() {
 
   const mediaReady = permission === "granted" && status !== "loading" && status !== "error";
   const rawPspi = currentScore ?? 0;
+  const smoothedPspi = smoothedScore ?? 0;
   const scoreReady = calibrationComplete;
   const { width, height } = dimensions;
 
+  const heroColor = scoreReady ? pspiColor(smoothedPspi) : "var(--color-ink-30)";
+
   return (
-    <div className="flex flex-1 min-h-0 flex-col bg-[#0b1628]">
-      {/* ── Camera zone 60% ─────────────────────────────────────────────── */}
-      <div className="relative flex-[6] overflow-hidden bg-black">
+    <div className="flex flex-1 min-h-0 flex-col" style={{ background: "#0B0E12" }}>
+      {/* ── Camera zone (dark, full bleed) ───────────────────────────────────── */}
+      <div className="relative flex-[6] overflow-hidden" style={{ background: "#0B0E12" }}>
         <video
           ref={videoRef}
           className="absolute inset-0 h-full w-full object-cover -scale-x-100"
-          autoPlay playsInline muted
+          autoPlay
+          playsInline
+          muted
           onPlaying={handleVideoPlaying}
         />
 
-        {/* Permission: prompt overlay */}
+        {/* Permission prompts */}
         {permission === "prompt" && (
-          <div className="absolute inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-[#0b1628] text-slate-100">
-            <p className="text-center px-8">L&apos;accès à la caméra est requis pour l&apos;analyse faciale.</p>
-            <button className="rounded-xl bg-indigo-600 px-6 py-3 font-medium text-white" onClick={() => startCamera("user").then(startDetection)}>
+          <div className="absolute inset-0 z-50 flex flex-col items-center justify-center gap-4" style={{ background: "#0B0E12", color: "#fff" }}>
+            <p className="px-8 text-center text-[14px]">L&apos;accès à la caméra est requis pour l&apos;analyse faciale.</p>
+            <button
+              className="rounded-[12px] px-6 py-3 text-[14px] font-medium"
+              style={{ background: "var(--color-ivory)", color: "var(--color-ink)" }}
+              onClick={() => startCamera("user").then(startDetection)}
+            >
               Autoriser la caméra
             </button>
-            <button className="text-sm text-slate-400 underline" onClick={() => router.push("/")}>Retour</button>
+            <button className="text-[13px] text-[#9FB9E6] underline" onClick={() => router.push("/")}>Retour</button>
           </div>
         )}
 
-        {/* Permission: denied overlay */}
         {(permission === "denied" || cameraError) && (
-          <div className="absolute inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-[#0b1628] text-slate-100">
-            <p className="text-center px-8">Accès caméra refusé. Autorisez la caméra dans les paramètres du navigateur.</p>
-            <button className="text-sm text-slate-400 underline" onClick={() => router.push("/")}>Retour</button>
+          <div className="absolute inset-0 z-50 flex flex-col items-center justify-center gap-4" style={{ background: "#0B0E12", color: "#fff" }}>
+            <p className="px-8 text-center text-[14px]">Accès caméra refusé. Autorisez la caméra dans les paramètres du navigateur.</p>
+            <button className="text-[13px] text-[#9FB9E6] underline" onClick={() => router.push("/")}>Retour</button>
           </div>
         )}
 
@@ -638,29 +713,29 @@ export default function CameraView() {
           />
         )}
 
-        {/* Timer -- top left */}
-        <div className="absolute left-3 top-3 flex items-center gap-1.5 rounded-full backdrop-blur-md bg-black/40 border border-white/10 px-3 py-1 pointer-events-none">
-          <span className="inline-block h-2 w-2 rounded-full bg-red-500 animate-pulse shadow-sm shadow-red-500/50" />
-          <span className="text-[11px] font-mono font-medium text-white">{formatTime(sessionSec)}</span>
+        {/* Top HUD — REC left, FPS right */}
+        <div className="absolute left-5 right-5 top-5 flex items-start justify-between pointer-events-none">
+          <RecChip seconds={sessionSec} />
+          {mediaReady && <FpsChip fps={fps} />}
         </div>
 
-        {/* FPS -- top right */}
-        {mediaReady && (
-          <div className="absolute right-3 top-3 rounded-full backdrop-blur-md bg-black/40 border border-white/10 px-3 py-1 pointer-events-none">
-            <span className="text-[11px] font-mono font-medium text-cyan-300">{fps} <span className="text-slate-400">fps</span></span>
-          </div>
-        )}
-
-        {/* Status badge -- top center */}
-        <div className="absolute left-1/2 top-3 -translate-x-1/2 pointer-events-none">
+        {/* Center status */}
+        <div className="absolute left-1/2 top-5 -translate-x-1/2 pointer-events-none">
           <StatusBadge status={status} />
         </div>
 
-        {/* AU toggle + panel -- right side below FPS */}
+        {/* AU panel — right side */}
         {mediaReady && (
-          <div className="absolute right-2.5 top-10 z-20 flex flex-col items-end gap-1">
+          <div className="absolute right-3 top-[86px] z-20 flex flex-col items-end gap-1.5">
             <button
-              className={`rounded-full px-2.5 py-1 text-[10px] font-bold transition ${showAU ? "bg-indigo-600 text-white" : "bg-black/50 text-slate-300"}`}
+              className="px-2.5 py-1 rounded-full text-[10px] font-medium"
+              style={{
+                background: showAU ? "rgba(47,75,138,0.35)" : "rgba(11,14,18,0.55)",
+                color: showAU ? "#D6E2F5" : "rgba(255,255,255,0.7)",
+                border: `1px solid ${showAU ? "rgba(159,185,230,0.3)" : "rgba(255,255,255,0.1)"}`,
+                backdropFilter: "blur(12px)",
+                fontFamily: "var(--font-mono)",
+              }}
               onClick={() => setShowAU((v) => !v)}
             >
               AU
@@ -669,10 +744,10 @@ export default function CameraView() {
           </div>
         )}
 
-        {/* Loading / error overlay */}
+        {/* Loading / error */}
         {(status === "loading" || status === "error") && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/70">
-            <p className="text-sm text-white px-4 text-center">
+          <div className="absolute inset-0 flex items-center justify-center" style={{ background: "rgba(11,14,18,0.7)" }}>
+            <p className="px-4 text-center text-[14px] text-white">
               {status === "error" ? "Erreur de chargement" : loadingMessage || "Initialisation de l'IA..."}
             </p>
           </div>
@@ -680,124 +755,196 @@ export default function CameraView() {
 
         {/* Calibration overlay */}
         {isCalibrating && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/70">
-            <p className="text-base font-semibold text-white">Calibration en cours</p>
-            <p className="text-sm text-slate-300 text-center px-8">Regardez la caméra et gardez une expression neutre</p>
-            <div className="h-2 w-48 overflow-hidden rounded-full bg-[#1e3a5f]">
-              <div className="h-full rounded-full bg-indigo-500 transition-all duration-200" style={{ width: `${Math.round(calibrationProgress * 100)}%` }} />
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3" style={{ background: "rgba(11,14,18,0.72)" }}>
+            <p
+              className="text-white"
+              style={{ fontFamily: "var(--font-serif)", fontSize: 26, letterSpacing: "-0.3px" }}
+            >
+              Calibration en cours
+            </p>
+            <p className="px-8 text-center text-[13px] text-[#9FB9E6]">
+              Regardez la caméra et gardez une expression neutre
+            </p>
+            <div className="h-[3px] w-48 overflow-hidden rounded-full" style={{ background: "rgba(255,255,255,0.15)" }}>
+              <div className="h-full rounded-full transition-all duration-200" style={{ width: `${Math.round(calibrationProgress * 100)}%`, background: "#9FB9E6" }} />
             </div>
-            <p className="text-sm font-mono text-slate-300">
+            <p className="text-[13px]" style={{ fontFamily: "var(--font-mono)", color: "rgba(255,255,255,0.8)" }}>
               {Math.max(0, Math.ceil((1 - calibrationProgress) * settings.calibrationDurationSec))} s
             </p>
           </div>
         )}
 
-        {/* Calibration done badge */}
+        {/* Calibration done */}
         {showCalibDone && !isCalibrating && (
-          <div className="absolute left-1/2 bottom-16 -translate-x-1/2 rounded-full bg-green-600/90 px-4 py-1.5 pointer-events-none">
-            <span className="text-sm font-medium text-white">Calibration terminée</span>
+          <div
+            className="absolute left-1/2 bottom-20 -translate-x-1/2 rounded-full px-4 py-1.5 pointer-events-none"
+            style={{ background: `${PSPI_GREEN}CC`, color: "#fff", backdropFilter: "blur(10px)" }}
+          >
+            <span className="text-[12.5px] font-medium">Calibration terminée</span>
           </div>
         )}
 
-        {/* Switch camera -- bottom left */}
+        {/* Bottom controls — flip / marquer */}
         {mediaReady && (
-          <button
-            className="absolute left-3 bottom-3 rounded-full backdrop-blur-md bg-black/40 border border-white/10 p-2.5 text-white active:bg-white/20 transition"
-            onClick={switchCamera} aria-label="Changer de caméra"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-          </button>
-        )}
-
-        {/* Mark event -- bottom right */}
-        {mediaReady && (
-          <button
-            className="absolute right-3 bottom-3 rounded-full backdrop-blur-md bg-indigo-500/30 border border-indigo-400/30 px-4 py-2 text-[11px] font-semibold text-indigo-200 active:bg-indigo-500/40 transition shadow-lg shadow-indigo-500/10"
-            onClick={() => setShowAnnotModal(true)}
-          >
-            + Marquer
-          </button>
+          <div className="absolute left-5 right-5 bottom-4 flex items-center justify-between">
+            <button
+              className="flex h-10 w-10 items-center justify-center rounded-full text-white"
+              style={{
+                background: "rgba(11,14,18,0.55)",
+                border: "1px solid rgba(255,255,255,0.12)",
+                backdropFilter: "blur(12px)",
+              }}
+              onClick={switchCamera}
+              aria-label="Changer de caméra"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 7h11a5 5 0 015 5" />
+                <path d="M20 17H9a5 5 0 01-5-5" />
+                <path d="M7 4L4 7l3 3" />
+                <path d="M17 20l3-3-3-3" />
+              </svg>
+            </button>
+            <button
+              className="flex items-center gap-2 rounded-full px-4 py-2"
+              style={{
+                background: "rgba(47,75,138,0.35)",
+                border: "1px solid rgba(159,185,230,0.3)",
+                color: "#D6E2F5",
+                backdropFilter: "blur(12px)",
+              }}
+              onClick={() => setShowAnnotModal(true)}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 12V4h8l9 9-8 8-9-9z" />
+                <circle cx="8" cy="8" r="1.2" fill="currentColor" />
+              </svg>
+              <span className="text-[12px] font-medium">Marquer</span>
+            </button>
+          </div>
         )}
       </div>
 
-      {/* ── Dashboard 40% ───────────────────────────────────────────────── */}
-      <div ref={dashRef} className="flex flex-[4] min-h-0 flex-col gap-1.5 overflow-hidden px-3 pt-2 pb-1" style={{ background: "linear-gradient(180deg, #0d1424 0%, #0a0e1a 100%)" }}>
-        {/* Row 1: Gauge + Stats */}
-        <div className="flex gap-3">
-          <div className="flex items-center justify-center">
-            <CircularGauge score={gaugeScore} />
-          </div>
-          <div className="flex flex-1 flex-col justify-center gap-1.5">
-            {/* PSPI lissé */}
-            <div className="rounded-lg border border-white/[0.06] bg-white/[0.03] px-3 py-1.5">
-              <span className="text-[9px] uppercase tracking-wider text-slate-500 font-medium">PSPI lissé</span>
-              <p className="text-lg font-bold font-mono leading-tight transition-colors duration-300" style={{ color: scoreReady ? pspiColor(rawPspi) : "#475569" }}>
-                {scoreReady ? (smoothedScore ?? 0).toFixed(1) : "--"}
-                {scoreReady && <span className="text-[10px] font-normal text-slate-600"> /{PSPI_MAX}</span>}
-              </p>
+      {/* ── Dashboard dock — ivory ──────────────────────────────────────────── */}
+      <div
+        ref={dashRef}
+        className="flex-[4] min-h-0 flex flex-col overflow-hidden px-6 pt-4 pb-3"
+        style={{
+          background: "var(--color-ivory)",
+          borderTopLeftRadius: 24,
+          borderTopRightRadius: 24,
+          color: "var(--color-ink)",
+          marginTop: -12,
+          position: "relative",
+          zIndex: 5,
+        }}
+      >
+        <div className="mx-auto mb-3 h-1 w-10 rounded-full" style={{ background: "var(--color-ink-15)" }} />
+
+        {/* Hero score + stats row */}
+        <div className="flex items-end justify-between mb-3">
+          <div>
+            <span className="text-[10px] uppercase text-[var(--color-ink-50)]" style={{ letterSpacing: "0.12em", fontWeight: 500 }}>
+              PSPI lissé
+            </span>
+            <div className="mt-1 flex items-baseline gap-2">
+              <span
+                style={{
+                  fontFamily: "var(--font-serif)",
+                  fontSize: 60,
+                  color: heroColor,
+                  lineHeight: 0.9,
+                  letterSpacing: "-0.02em",
+                  transition: "color 200ms",
+                }}
+              >
+                {scoreReady ? smoothedPspi.toFixed(1) : "--"}
+              </span>
+              <span className="text-[13px] text-[var(--color-ink-50)]" style={{ fontFamily: "var(--font-mono)" }}>
+                /{PSPI_MAX}
+              </span>
             </div>
-            {/* Spikes + Annotations row */}
-            <div className="flex gap-1.5">
-              <div className="flex-1 rounded-lg border border-white/[0.06] bg-white/[0.03] px-2.5 py-1.5">
-                <span className="text-[9px] uppercase tracking-wider text-slate-500 font-medium">Spikes</span>
-                <p className="text-base font-bold font-mono leading-tight" style={{ color: scoreReady && spikeCount > 0 ? "#ef4444" : "#475569" }}>
-                  {scoreReady ? spikeCount : "--"}
-                </p>
+            {scoreReady && (
+              <div className="mt-0.5 text-[12.5px]" style={{ color: heroColor }}>
+                {pspiLabel(smoothedPspi)} · brut {rawPspi.toFixed(1)}
               </div>
-              <div className="flex-1 rounded-lg border border-white/[0.06] bg-white/[0.03] px-2.5 py-1.5">
-                <span className="text-[9px] uppercase tracking-wider text-slate-500 font-medium">Notes</span>
-                <p className="text-base font-bold font-mono leading-tight text-cyan-400">{annotations.length}</p>
+            )}
+          </div>
+
+          <div className="flex gap-4 mb-1">
+            <div className="text-right">
+              <span className="text-[10px] uppercase text-[var(--color-ink-50)]" style={{ letterSpacing: "0.12em", fontWeight: 500 }}>
+                Pics
+              </span>
+              <div style={{ fontFamily: "var(--font-serif)", fontSize: 22, color: spikeCount > 0 ? PSPI_ROSE : "var(--color-ink-30)", lineHeight: 1 }}>
+                {scoreReady ? spikeCount : "--"}
+              </div>
+            </div>
+            <div className="text-right">
+              <span className="text-[10px] uppercase text-[var(--color-ink-50)]" style={{ letterSpacing: "0.12em", fontWeight: 500 }}>
+                Notes
+              </span>
+              <div style={{ fontFamily: "var(--font-serif)", fontSize: 22, color: "var(--color-accent-ink)", lineHeight: 1 }}>
+                {annotations.length}
               </div>
             </div>
           </div>
         </div>
 
-        {/* Calibration banner or sparkline */}
+        {/* Chart panel or calibration banner */}
         {!scoreReady ? (
-          <div className="rounded-xl border border-indigo-500/20 bg-indigo-500/[0.06] px-3 py-2.5">
-            <p className="text-xs text-indigo-300/80">
+          <div className="rounded-[14px] px-4 py-3" style={{ background: "var(--color-paper)", border: "1px solid var(--color-ink-08)" }}>
+            <p className="text-[12.5px] text-[var(--color-ink-70)]">
               {isCalibrating
-                ? `Calibration... ${Math.round(calibrationProgress * 100)}% — Gardez une expression neutre`
+                ? `Calibration en cours · ${Math.round(calibrationProgress * 100)}% — Gardez une expression neutre`
                 : status === "detected"
-                  ? "Visage détecté — appuyez sur \"Calibrer\" pour démarrer l'analyse"
+                  ? "Visage détecté — appuyez sur « Calibrer » pour démarrer l'analyse"
                   : "En attente de détection du visage..."}
             </p>
           </div>
         ) : (
-          <div className="rounded-lg border border-white/[0.04] bg-white/[0.02] px-1 pt-1 pb-0.5">
-            <div className="flex items-baseline justify-between mb-0.5 px-1">
-              <span className="text-[9px] font-semibold uppercase tracking-wider text-slate-500">Historique</span>
-              <span className="text-[8px] text-slate-600 font-mono">{HISTORY_SEC}s</span>
+          <div className="rounded-[14px] px-3 py-2" style={{ background: "var(--color-paper)", border: "1px solid var(--color-ink-08)" }}>
+            <div className="flex justify-between mb-1">
+              <span className="text-[9px] uppercase" style={{ fontFamily: "var(--font-mono)", color: "var(--color-ink-50)", letterSpacing: "0.08em" }}>
+                {HISTORY_SEC} s · temps réel
+              </span>
+              <span className="text-[9px] uppercase" style={{ fontFamily: "var(--font-mono)", color: "var(--color-ink-50)", letterSpacing: "0.08em" }}>
+                PSPI 0–{PSPI_MAX}
+              </span>
             </div>
-            <PainHistoryChart data={chartData} annotations={annotations} currentSec={sessionSec} chartWidth={chartWidth} />
+            <PainHistoryChart
+              data={chartData}
+              annotations={annotations}
+              currentSec={sessionSec}
+              chartWidth={chartWidth}
+            />
           </div>
         )}
 
-      </div>
-
-      {/* ── Bottom bar ─────────────────────────────────────────────── */}
-      <div className="flex-shrink-0 border-t border-white/[0.06] bg-[#0a0e1a] px-4 pt-3 pb-8 flex gap-3">
-        <button className="flex-1 py-3 rounded-xl border border-red-500/30 bg-red-500/10 text-red-400 font-semibold text-[14px] active:bg-red-500/20 transition-colors" onClick={handleStop}>
-          Arrêter
-        </button>
-        {mediaReady && !isCalibrating && (
+        {/* Bottom action bar — Arrêter + Re-calibrer */}
+        <div className="mt-auto pt-3 flex gap-2.5">
           <button
-            className={`flex-1 py-3 rounded-xl font-semibold text-[14px] text-white transition-colors ${
-              calibrationComplete
-                ? "bg-gradient-to-r from-emerald-600 to-teal-500 active:from-emerald-700 active:to-teal-600 shadow-lg shadow-emerald-500/20"
-                : "bg-gradient-to-r from-indigo-600 to-indigo-500 active:from-indigo-700 active:to-indigo-600 shadow-lg shadow-indigo-500/20"
-            }`}
-            onClick={startCalibration}
+            className="flex-1 rounded-[12px] py-3 text-[13.5px] font-medium transition-colors"
+            style={{
+              background: `${PSPI_ROSE}0d`,
+              color: PSPI_ROSE,
+              border: `1px solid ${PSPI_ROSE}33`,
+            }}
+            onClick={handleStop}
           >
-            {calibrationComplete ? "Re-calibrer" : `Calibrer ${settings.calibrationDurationSec} s`}
+            Arrêter
           </button>
-        )}
+          {mediaReady && !isCalibrating && (
+            <button
+              className="flex-[2] rounded-[12px] py-3 text-[13.5px] font-medium text-[var(--color-ivory)] transition-colors"
+              style={{ background: "var(--color-ink)" }}
+              onClick={startCalibration}
+            >
+              {calibrationComplete ? "Re-calibrer" : `Calibrer ${settings.calibrationDurationSec} s`}
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* ── Annotation modal ────────────────────────────────────────────── */}
       <AnnotationModal
         visible={showAnnotModal}
         currentSec={sessionSec}
