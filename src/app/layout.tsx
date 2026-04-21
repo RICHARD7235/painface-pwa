@@ -1,12 +1,6 @@
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
 import "./globals.css";
 import InstallPrompt from "@/components/InstallPrompt";
-
-const inter = Inter({
-  variable: "--font-inter",
-  subsets: ["latin"],
-});
 
 export const metadata: Metadata = {
   title: "PainFace",
@@ -14,7 +8,7 @@ export const metadata: Metadata = {
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
-    statusBarStyle: "black-translucent",
+    statusBarStyle: "default",
     title: "PainFace",
   },
 };
@@ -25,8 +19,23 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   viewportFit: "cover",
-  themeColor: "#0a0e1a",
+  themeColor: "#F4F1EA",
 };
+
+// ─── Clinical wordmark — "Painface" serif + monogram ───────────────────────
+function Logo({ size = 28 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 32 32" aria-hidden>
+      <rect width="32" height="32" rx="8" fill="#14171C" />
+      <path
+        d="M8 22 Q9 13 12 13 Q13 13 13 16 Q14 13 16 13 Q19 13 18 22"
+        stroke="#F4F1EA" strokeWidth="1.6" fill="none" strokeLinecap="round"
+      />
+      <circle cx="22" cy="13" r="1.1" fill="#F4F1EA" />
+      <path d="M22 18 L22 22" stroke="#F4F1EA" strokeWidth="1.6" strokeLinecap="round" />
+    </svg>
+  );
+}
 
 export default function RootLayout({
   children,
@@ -34,33 +43,41 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="fr" className={`${inter.variable}`}>
-      <body className="h-[100dvh] flex flex-col bg-[#0a0e1a] font-sans antialiased overflow-hidden">
-        {/* Glass header */}
+    <html lang="fr">
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+          rel="stylesheet"
+        />
+      </head>
+      <body className="h-[100dvh] flex flex-col bg-[var(--color-ivory)] text-[var(--color-ink)] antialiased overflow-hidden">
+        {/* Editorial header — ivory + hairline rule */}
         <header
-          className="flex-shrink-0 flex items-center justify-between px-5 backdrop-blur-xl border-b border-white/[0.06]"
+          className="flex-shrink-0 flex items-center justify-between px-5 border-b border-[var(--color-ink-08)] bg-[var(--color-ivory)]"
           style={{
             paddingTop: "max(10px, env(safe-area-inset-top))",
             paddingBottom: "10px",
-            background: "linear-gradient(180deg, rgba(99,102,241,0.15) 0%, rgba(10,14,26,0.95) 100%)",
           }}
         >
           <a href="/" className="flex items-center gap-2.5">
-            {/* Logo icon */}
-            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-indigo-500 to-cyan-400 flex items-center justify-center shadow-lg shadow-indigo-500/20">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4.5 w-4.5" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
-                <path d="M9 12h.01M15 12h.01M10 16c.5.3 1.2.5 2 .5s1.5-.2 2-.5" />
-                <circle cx="12" cy="12" r="10" />
-              </svg>
-            </div>
-            <div>
-              <span className="text-[17px] font-bold text-white tracking-tight">PainFace</span>
-              <span className="ml-1.5 text-[10px] font-medium text-indigo-300/70">PRO</span>
+            <Logo size={28} />
+            <div className="flex flex-col leading-none">
+              <span
+                className="text-[20px] text-[var(--color-ink)]"
+                style={{ fontFamily: "var(--font-serif)", letterSpacing: "-0.3px" }}
+              >
+                Painface
+              </span>
+              <span
+                className="mt-[3px] text-[9px] uppercase text-[var(--color-ink-50)]"
+                style={{ fontFamily: "var(--font-mono)", letterSpacing: "1.5px" }}
+              >
+                Clinical · v2.1
+              </span>
             </div>
           </a>
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] font-mono text-slate-500 tracking-wider">v2.0</span>
-          </div>
         </header>
 
         {/* Main content */}

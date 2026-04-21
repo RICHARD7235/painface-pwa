@@ -96,21 +96,35 @@ export default function InstallPrompt() {
       className="fixed inset-x-0 z-50 px-4 animate-slide-up"
       style={{ bottom: "max(16px, env(safe-area-inset-bottom))" }}
     >
-      <div className="mx-auto max-w-md rounded-2xl border border-white/10 bg-[#141827]/90 backdrop-blur-xl p-4 shadow-2xl shadow-indigo-500/10">
+      <div
+        className="mx-auto max-w-md rounded-[20px] bg-[var(--color-ivory)] p-4"
+        style={{
+          border: "1px solid var(--color-ink-08)",
+          boxShadow: "0 20px 40px rgba(20,23,28,0.12)",
+        }}
+      >
         {kind === "android" ? (
           /* ---- Android / Chrome ---- */
           <div className="flex flex-col gap-3">
             <div className="flex items-start gap-3">
-              <div className="h-10 w-10 flex-shrink-0 rounded-xl bg-gradient-to-br from-indigo-500 to-cyan-400 flex items-center justify-center">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+              <div
+                className="h-10 w-10 flex-shrink-0 rounded-[10px] flex items-center justify-center"
+                style={{ background: "var(--color-ink)", color: "var(--color-ivory)" }}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round">
                   <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                   <polyline points="7 10 12 15 17 10" />
                   <line x1="12" y1="15" x2="12" y2="3" />
                 </svg>
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-white">Installer PainFace</p>
-                <p className="text-xs text-slate-400 mt-0.5">
+                <p
+                  className="text-[var(--color-ink)]"
+                  style={{ fontFamily: "var(--font-serif)", fontSize: 20, letterSpacing: "-0.3px", lineHeight: 1.1 }}
+                >
+                  Installer PainFace
+                </p>
+                <p className="mt-1 text-[12px] text-[var(--color-ink-70)] leading-[1.45]">
                   Accédez à l&apos;app directement depuis votre écran d&apos;accueil, même hors-ligne.
                 </p>
               </div>
@@ -118,13 +132,15 @@ export default function InstallPrompt() {
             <div className="flex gap-2">
               <button
                 onClick={handleDismiss}
-                className="flex-1 rounded-xl py-2.5 text-xs font-medium text-slate-400 hover:text-slate-300 transition-colors"
+                className="flex-1 rounded-[12px] py-2.5 text-[12px] font-medium text-[var(--color-ink-70)] transition-colors"
+                style={{ border: "1px solid var(--color-ink-15)" }}
               >
                 Plus tard
               </button>
               <button
                 onClick={handleInstall}
-                className="flex-1 rounded-xl py-2.5 text-xs font-semibold text-white bg-gradient-to-r from-indigo-500 to-cyan-500 hover:from-indigo-400 hover:to-cyan-400 transition-all shadow-lg shadow-indigo-500/25"
+                className="flex-1 rounded-[12px] py-2.5 text-[12px] font-medium text-[var(--color-ivory)]"
+                style={{ background: "var(--color-ink)" }}
               >
                 Installer
               </button>
@@ -134,32 +150,41 @@ export default function InstallPrompt() {
           /* ---- iOS Safari ---- */
           <div className="flex flex-col gap-3">
             <div className="flex items-start gap-3">
-              <div className="h-10 w-10 flex-shrink-0 rounded-xl bg-gradient-to-br from-indigo-500 to-cyan-400 flex items-center justify-center">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+              <div
+                className="h-10 w-10 flex-shrink-0 rounded-[10px] flex items-center justify-center"
+                style={{ background: "var(--color-ink)", color: "var(--color-ivory)" }}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round">
                   <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
                   <polyline points="16 6 12 2 8 6" />
                   <line x1="12" y1="2" x2="12" y2="15" />
                 </svg>
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-white">Installer PainFace</p>
-                <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                <p
+                  className="text-[var(--color-ink)]"
+                  style={{ fontFamily: "var(--font-serif)", fontSize: 20, letterSpacing: "-0.3px", lineHeight: 1.1 }}
+                >
+                  Installer PainFace
+                </p>
+                <p className="mt-1 text-[12px] text-[var(--color-ink-70)] leading-[1.5]">
                   Appuyez sur{" "}
                   <span className="inline-flex items-center align-middle mx-0.5">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-indigo-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" style={{ color: "var(--color-accent-ink)" }}>
                       <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
                       <polyline points="16 6 12 2 8 6" />
                       <line x1="12" y1="2" x2="12" y2="15" />
                     </svg>
                   </span>{" "}
-                  <strong className="text-white">Partager</strong> puis{" "}
-                  <strong className="text-white">Sur l&apos;écran d&apos;accueil</strong>.
+                  <strong className="text-[var(--color-ink)]">Partager</strong> puis{" "}
+                  <strong className="text-[var(--color-ink)]">Sur l&apos;écran d&apos;accueil</strong>.
                 </p>
               </div>
             </div>
             <button
               onClick={handleDismiss}
-              className="w-full rounded-xl py-2.5 text-xs font-medium text-slate-400 hover:text-slate-300 transition-colors"
+              className="w-full rounded-[12px] py-2.5 text-[12px] font-medium text-[var(--color-ink-70)]"
+              style={{ border: "1px solid var(--color-ink-15)" }}
             >
               J&apos;ai compris
             </button>

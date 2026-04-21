@@ -2,7 +2,7 @@
 
 /**
  * PatientDetailPage -- Profil patient, historique des séances et graphe PSPI.
- * Premium dark medical tech theme.
+ * Clinical / éditorial theme.
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -20,33 +20,26 @@ import type { Patient, Session } from '../../../types/patient';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-function formatDate(ts: number): string {
+function formatDateLong(ts: number): string {
   return new Intl.DateTimeFormat('fr-FR', {
-    day: '2-digit',
+    weekday: 'long',
+    day: 'numeric',
     month: 'short',
-    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
   }).format(new Date(ts));
 }
 
 function formatDuration(sec: number): string {
-  const h = Math.floor(sec / 3600);
-  const m = Math.floor((sec % 3600) / 60);
+  const m = Math.floor(sec / 60);
   const s = sec % 60;
-  if (h > 0) return `${h}h ${m}min`;
-  if (m > 0) return `${m}min ${s}s`;
-  return `${s}s`;
+  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 }
 
-function pspiColor(score: number): string {
-  if (score <= 4) return 'text-emerald-400';
-  if (score <= 8) return 'text-amber-400';
-  return 'text-red-400';
-}
-
-function pspiColorHex(score: number): string {
-  if (score <= 4) return '#34d399';
-  if (score <= 8) return '#fbbf24';
-  return '#f87171';
+function pspiHex(score: number): string {
+  if (score <= 4) return 'var(--color-pspi-green)';
+  if (score <= 8) return 'var(--color-pspi-amber)';
+  return 'var(--color-pspi-rose)';
 }
 
 function pspiLabel(score: number): string {
@@ -61,107 +54,54 @@ function pspiLabel(score: number): string {
 
 function PspiEvolutionChart({ sessions }: { sessions: Session[] }) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [width, setWidth] = useState(300);
+  const [width, setWidth] = useState(330);
 
   useEffect(() => {
     if (!containerRef.current) return;
     const obs = new ResizeObserver((entries) => {
-      for (const entry of entries) {
-        setWidth(entry.contentRect.width);
-      }
+      for (const entry of entries) setWidth(entry.contentRect.width);
     });
     obs.observe(containerRef.current);
     return () => obs.disconnect();
   }, []);
 
   const W = width;
-  const H = 100;
-  const PL = 28;
-  const PR = 12;
-  const PT = 10;
-  const PB = 20;
-  const CW = W - PL - PR;
-  const CH = H - PT - PB;
+  const H = 70;
 
-  // Sessions triées chronologiquement
   const sorted = [...sessions].reverse();
   if (sorted.length < 2) {
     return (
-      <div ref={containerRef} className="py-6 text-center text-sm text-slate-500">
-        Minimum 2 séances pour afficher le graphe
+      <div ref={containerRef} className="py-4 text-center text-[13px] text-[var(--color-ink-50)]">
+        Minimum 2 séances pour afficher la courbe
       </div>
     );
   }
 
-  const MAX_PSPI = 16;
   const n = sorted.length;
-  const toX = (i: number) => PL + (i / (n - 1)) * CW;
-  const toY = (v: number) => PT + CH - (v / MAX_PSPI) * CH;
+  const toX = (i: number) => (i / (n - 1)) * W;
+  const toY = (v: number) => H - (v / 16) * (H - 10) - 4;
 
-  const points = sorted
-    .map((s, i) => `${toX(i).toFixed(1)},${toY(s.moyennePSPI).toFixed(1)}`)
-    .join(' ');
+  const linePts = sorted.map((s, i) => `${toX(i).toFixed(1)} ${toY(s.moyennePSPI).toFixed(1)}`).join(' L ');
+  const areaPts =
+    `M 0 ${H} L ` +
+    sorted.map((s, i) => `${toX(i).toFixed(1)} ${toY(s.moyennePSPI).toFixed(1)}`).join(' L ') +
+    ` L ${W} ${H} Z`;
 
-  const gridVals = [4, 8, 12];
-
-  // Gradient area under line
-  const areaPoints =
-    `${PL},${PT + CH} ` +
-    sorted.map((s, i) => `${toX(i).toFixed(1)},${toY(s.moyennePSPI).toFixed(1)}`).join(' ') +
-    ` ${PL + CW},${PT + CH}`;
+  const lastColor = pspiHex(sorted[n - 1]!.moyennePSPI);
 
   return (
     <div ref={containerRef}>
-      <svg width={W} height={H}>
+      <svg width={W} height={H} style={{ display: 'block' }}>
         <defs>
-          <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#6366f1" stopOpacity="0.3" />
-            <stop offset="100%" stopColor="#6366f1" stopOpacity="0.02" />
+          <linearGradient id="pg" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0" stopColor={lastColor} stopOpacity="0.18" />
+            <stop offset="1" stopColor={lastColor} stopOpacity="0" />
           </linearGradient>
         </defs>
-        {/* Grid lines */}
-        {gridVals.map((v) => (
-          <line
-            key={v}
-            x1={PL} y1={toY(v)} x2={PL + CW} y2={toY(v)}
-            stroke="#1a2744" strokeWidth={0.8} strokeDasharray="3,4"
-          />
-        ))}
-        {/* Y labels */}
-        {[0, 8, 16].map((v) => (
-          <text key={v} x={PL - 3} y={toY(v) + 4} textAnchor="end" fontSize={8} fill="#475569">
-            {v}
-          </text>
-        ))}
-        {/* Baseline */}
-        <line x1={PL} y1={PT + CH} x2={PL + CW} y2={PT + CH} stroke="#1a2744" strokeWidth={0.8} />
-
-        {/* Area fill */}
-        <polygon points={areaPoints} fill="url(#chartGrad)" />
-
-        {/* Line */}
-        <polyline
-          points={points}
-          fill="none" stroke="#818cf8" strokeWidth={2}
-          strokeLinejoin="round" strokeLinecap="round"
-        />
-
-        {/* Dots */}
-        {sorted.map((ss, i) => (
-          <circle
-            key={ss.id}
-            cx={toX(i)} cy={toY(ss.moyennePSPI)} r={3.5}
-            fill={pspiColorHex(ss.moyennePSPI)} stroke="#0a0e1a" strokeWidth={1.5}
-          />
-        ))}
-
-        {/* X labels */}
-        <text x={PL} y={H - 3} fontSize={8} fill="#475569">
-          {new Intl.DateTimeFormat('fr-FR', { day: '2-digit', month: 'short' }).format(new Date(sorted[0]!.date))}
-        </text>
-        <text x={PL + CW} y={H - 3} textAnchor="end" fontSize={8} fill="#475569">
-          {new Intl.DateTimeFormat('fr-FR', { day: '2-digit', month: 'short' }).format(new Date(sorted[n - 1]!.date))}
-        </text>
+        <path d={areaPts} fill="url(#pg)" />
+        <path d={`M ${linePts}`} stroke={lastColor} strokeWidth={1.25} fill="none" />
+        <line x1="0" y1={toY(8)} x2={W} y2={toY(8)} stroke="var(--color-ink-15)" strokeDasharray="2 3" strokeWidth={0.6} />
+        <line x1="0" y1={toY(4)} x2={W} y2={toY(4)} stroke="var(--color-ink-15)" strokeDasharray="2 3" strokeWidth={0.6} />
       </svg>
     </div>
   );
@@ -183,7 +123,6 @@ function EditPatientModal({ visible, patient, onClose, onSaved }: EditModalProps
   const [notes, setNotes] = useState(patient.notes ?? '');
   const [saving, setSaving] = useState(false);
 
-  // Re-sync when patient changes
   useEffect(() => {
     setNom(patient.nom);
     setPrenom(patient.prenom);
@@ -217,48 +156,26 @@ function EditPatientModal({ visible, patient, onClose, onSaved }: EditModalProps
   if (!visible) return null;
 
   const inputClass =
-    'mb-2.5 w-full rounded-lg border border-white/[0.08] bg-white/[0.05] px-3.5 py-3 text-[15px] text-white placeholder:text-slate-500 focus:border-indigo-500/50 focus:outline-none focus:ring-1 focus:ring-indigo-500/50';
+    'mb-2.5 w-full rounded-xl border border-[var(--color-ink-15)] bg-[var(--color-paper)] px-4 py-3 text-[15px] text-[var(--color-ink)] placeholder:text-[var(--color-ink-50)] focus:border-[var(--color-accent)] focus:outline-none';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm">
-      <div className="w-full max-w-lg rounded-t-2xl bg-[#111827] border-t border-white/[0.08] p-6 pb-8">
-        <h2 className="mb-4 text-lg font-bold text-white">
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-[var(--color-ink)]/40 backdrop-blur-sm">
+      <div className="w-full max-w-lg rounded-t-3xl border-t border-[var(--color-ink-08)] bg-[var(--color-ivory)] p-6 pb-8 animate-slide-up">
+        <h2
+          className="mb-4 text-[var(--color-ink)]"
+          style={{ fontFamily: 'var(--font-serif)', fontSize: 24, letterSpacing: '-0.3px' }}
+        >
           Modifier le patient
         </h2>
-        <input
-          type="text"
-          placeholder="Prénom *"
-          className={inputClass}
-          value={prenom}
-          onChange={(e) => setPrenom(e.target.value)}
-        />
-        <input
-          type="text"
-          placeholder="Nom *"
-          className={inputClass}
-          value={nom}
-          onChange={(e) => setNom(e.target.value)}
-          style={{ textTransform: 'uppercase' }}
-        />
-        <input
-          type="text"
-          placeholder="Date de naissance (JJ/MM/AAAA)"
-          className={inputClass}
-          value={dateNaissance}
-          onChange={(e) => setDateNaissance(e.target.value)}
-        />
-        <textarea
-          placeholder="Notes (optionnel)"
-          rows={3}
-          className={`${inputClass} resize-none`}
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-        />
+        <input type="text" placeholder="Prénom *" className={inputClass} value={prenom} onChange={(e) => setPrenom(e.target.value)} />
+        <input type="text" placeholder="Nom *" className={inputClass} value={nom} onChange={(e) => setNom(e.target.value)} style={{ textTransform: 'uppercase' }} />
+        <input type="text" placeholder="Date de naissance (JJ/MM/AAAA)" className={inputClass} value={dateNaissance} onChange={(e) => setDateNaissance(e.target.value)} />
+        <textarea placeholder="Notes (optionnel)" rows={3} className={`${inputClass} resize-none`} value={notes} onChange={(e) => setNotes(e.target.value)} />
         <div className="mt-2 flex gap-2.5">
           <button
             type="button"
             onClick={onClose}
-            className="flex-1 rounded-lg border border-white/[0.08] bg-white/[0.05] py-3.5 text-[15px] font-semibold text-slate-400 hover:bg-white/[0.08] transition-colors"
+            className="flex-1 rounded-xl border border-[var(--color-ink-15)] py-3.5 text-[14px] font-medium text-[var(--color-ink)] transition-colors hover:bg-[var(--color-paper-alt)]"
           >
             Annuler
           </button>
@@ -266,7 +183,7 @@ function EditPatientModal({ visible, patient, onClose, onSaved }: EditModalProps
             type="button"
             onClick={handleSave}
             disabled={saving}
-            className="flex-[2] rounded-lg bg-gradient-to-r from-indigo-600 to-cyan-500 py-3.5 text-[15px] font-bold text-white hover:from-indigo-500 hover:to-cyan-400 disabled:opacity-50 transition-all"
+            className="flex-[2] rounded-xl bg-[var(--color-ink)] py-3.5 text-[14px] font-medium text-[var(--color-ivory)] transition-all disabled:opacity-50"
           >
             {saving ? 'Enregistrement...' : 'Enregistrer'}
           </button>
@@ -279,46 +196,39 @@ function EditPatientModal({ visible, patient, onClose, onSaved }: EditModalProps
 // ── SessionRow ───────────────────────────────────────────────────────────────
 
 function SessionRow({ session }: { session: Session }) {
-  const color = pspiColor(session.moyennePSPI);
-  const maxColor = pspiColor(session.maxPSPI);
+  const color = pspiHex(session.moyennePSPI);
+  const maxColor = pspiHex(session.maxPSPI);
 
   return (
     <Link
       href={`/session/${session.id}`}
-      className="flex items-center border border-white/[0.06] bg-white/[0.03] rounded-xl px-4 py-3.5 hover:bg-white/[0.06] transition-colors"
+      className="flex items-center gap-3.5 px-5 py-3 no-underline"
+      style={{ borderTop: '1px solid var(--color-ink-rule)' }}
     >
+      <div className="h-8 w-[4px] rounded-sm" style={{ background: color }} />
       <div className="min-w-0 flex-1">
-        <p className="text-[15px] font-semibold text-white">
-          {formatDate(session.date)}
-        </p>
-        <p className="mt-0.5 text-xs text-slate-500">
-          {formatDuration(session.duree)}
-          {' \u00b7 '}
-          {session.annotations.length > 0
-            ? `${session.annotations.length} annotation${session.annotations.length > 1 ? 's' : ''}`
-            : 'Aucune annotation'}
+        <div className="text-[14px] text-[var(--color-ink)]" style={{ letterSpacing: '-0.1px' }}>
+          {formatDateLong(session.date)}
+        </div>
+        <div className="text-[11px] text-[var(--color-ink-50)]" style={{ fontFamily: 'var(--font-mono)' }}>
+          durée {formatDuration(session.duree)}
           {session.painEvents.length > 0
-            ? ` \u00b7 ${session.painEvents.length} spike${session.painEvents.length > 1 ? 's' : ''}`
+            ? ` · ${session.painEvents.length} pic${session.painEvents.length > 1 ? 's' : ''}`
             : ''}
-        </p>
-      </div>
-
-      <div className="mr-2.5 flex gap-3">
-        <div className="flex flex-col items-center">
-          <span className={`text-base font-bold ${color}`}>
-            {session.moyennePSPI.toFixed(1)}
-          </span>
-          <span className="text-[9px] uppercase text-slate-600">moy.</span>
-        </div>
-        <div className="flex flex-col items-center">
-          <span className={`text-base font-bold ${maxColor}`}>
-            {session.maxPSPI.toFixed(1)}
-          </span>
-          <span className="text-[9px] uppercase text-slate-600">max</span>
         </div>
       </div>
-
-      <span className="text-xl text-slate-600">&#8250;</span>
+      <div className="mr-2.5 text-right">
+        <div className="text-[9px] uppercase text-[var(--color-ink-50)]" style={{ letterSpacing: '0.08em' }}>moy</div>
+        <div style={{ fontFamily: 'var(--font-serif)', fontSize: 16, color, lineHeight: 1 }}>
+          {session.moyennePSPI.toFixed(1)}
+        </div>
+      </div>
+      <div className="text-right">
+        <div className="text-[9px] uppercase text-[var(--color-ink-50)]" style={{ letterSpacing: '0.08em' }}>max</div>
+        <div style={{ fontFamily: 'var(--font-serif)', fontSize: 16, color: maxColor, lineHeight: 1 }}>
+          {session.maxPSPI.toFixed(1)}
+        </div>
+      </div>
     </Link>
   );
 }
@@ -379,7 +289,6 @@ export default function PatientDetailPage() {
     }
   }
 
-  /** Droit à l'oubli RGPD Art. 17 -- suppression complète avec double confirmation */
   async function handleGdprErase() {
     if (!patient) return;
     const ok1 = window.confirm(
@@ -389,12 +298,10 @@ export default function PatientDetailPage() {
         `Cette action est irréversible.`,
     );
     if (!ok1) return;
-
     const ok2 = window.confirm(
       'Confirmation finale\n\nÊtes-vous certain(e) ? Cette opération ne peut pas être annulée.',
     );
     if (!ok2) return;
-
     try {
       await deletePatientAll(patient.id);
       navigator.vibrate?.(10);
@@ -407,9 +314,9 @@ export default function PatientDetailPage() {
 
   if (loading) {
     return (
-      <div className="flex flex-1 flex-col items-center justify-center bg-[#0a0e1a]">
-        <div className="h-6 w-6 animate-spin rounded-full border-2 border-indigo-500/30 border-t-indigo-500" />
-        <p className="mt-3 text-sm text-slate-500">Chargement...</p>
+      <div className="flex flex-1 flex-col items-center justify-center bg-[var(--color-ivory)]">
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-[var(--color-ink-15)] border-t-[var(--color-ink)]" />
+        <p className="mt-3 text-[13px] text-[var(--color-ink-50)]">Chargement...</p>
       </div>
     );
   }
@@ -420,160 +327,169 @@ export default function PatientDetailPage() {
     sessions.length > 0
       ? sessions.reduce((sum, s) => sum + s.moyennePSPI, 0) / sessions.length
       : null;
+  const maxPspi = sessions.length > 0 ? Math.max(...sessions.map((s) => s.maxPSPI)) : null;
 
   return (
-    <div className="flex flex-1 flex-col overflow-auto bg-[#0a0e1a]">
-      {/* ── En-tête patient ─────────────────────────────────────────── */}
-      <div className="border-b border-white/[0.06] bg-white/[0.02] px-5 pb-6 pt-8 text-center">
-        <div className="mx-auto mb-3 flex h-[76px] w-[76px] items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-cyan-400 shadow-lg shadow-indigo-500/20">
-          <span className="text-[27px] font-bold text-white">
-            {(patient.prenom[0] ?? '') + (patient.nom[0] ?? '')}
-          </span>
+    <div className="flex flex-1 flex-col overflow-auto bg-[var(--color-ivory)]">
+      {/* Top bar — retour + title */}
+      <div className="px-5 pt-3 pb-2">
+        <div className="flex h-8 items-center justify-between">
+          <button
+            type="button"
+            onClick={() => router.back()}
+            className="flex items-center gap-1 text-[var(--color-ink-70)] text-[14px]"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+              <path d="M15 6l-6 6 6 6" />
+            </svg>
+            <span>Retour</span>
+          </button>
         </div>
-        <h1 className="text-[22px] font-bold text-white">
+        <h1
+          className="mt-2 text-[var(--color-ink)]"
+          style={{ fontFamily: 'var(--font-serif)', fontSize: 32, letterSpacing: '-0.4px', lineHeight: 1 }}
+        >
           {patient.prenom} {patient.nom}
         </h1>
-        {patient.dateNaissance && (
-          <p className="mt-0.5 text-sm text-slate-400">
-            Né(e) le {patient.dateNaissance}
-          </p>
-        )}
-        {patient.notes && (
-          <p className="mt-2 text-sm italic text-slate-500">
-            {patient.notes}
-          </p>
-        )}
-
-        {/* Badge consentement RGPD */}
-        <div className="mt-3 inline-block rounded-full border border-white/[0.06] bg-white/[0.04] px-3.5 py-1.5">
-          <span
-            className={`text-xs font-semibold ${consentOk ? 'text-emerald-400' : 'text-amber-400'}`}
-          >
-            {consentOk
-              ? '\u2713  Consentement RGPD recueilli'
-              : '\u26a0  Consentement RGPD manquant'}
-          </span>
-        </div>
-
-        {/* Bouton recueillir consentement (si absent) */}
-        {!consentOk && (
-          <div className="mt-2.5">
-            <Link
-              href={`/consent/${patient.id}`}
-              className="inline-block rounded-lg border border-indigo-500/30 bg-indigo-500/10 px-4 py-2 text-sm font-semibold text-indigo-300 hover:bg-indigo-500/20 transition-colors"
-            >
-              Recueillir le consentement
-            </Link>
-          </div>
-        )}
-
-        {/* Actions patient */}
-        <div className="mt-4 flex justify-center gap-2.5">
-          <button
-            type="button"
-            onClick={() => setShowEdit(true)}
-            className="rounded-lg border border-white/[0.08] bg-white/[0.05] px-5 py-2.5 text-sm font-semibold text-slate-300 hover:bg-white/[0.08] transition-colors"
-          >
-            Modifier
-          </button>
-          <button
-            type="button"
-            onClick={handleDelete}
-            className="rounded-lg border border-red-500/20 bg-red-500/10 px-5 py-2.5 text-sm font-semibold text-red-400 hover:bg-red-500/20 transition-colors"
-          >
-            Supprimer
-          </button>
-        </div>
+        <p className="mt-1.5 text-[12.5px] text-[var(--color-ink-50)]">
+          {patient.dateNaissance ? `Né(e) le ${patient.dateNaissance} · ` : ''}
+          {sessions.length} séance{sessions.length > 1 ? 's' : ''}
+          {patient.notes ? ` · ${patient.notes}` : ''}
+        </p>
       </div>
 
-      {/* ── Stats globales ──────────────────────────────────────────── */}
-      <div className="flex gap-3 border-b border-white/[0.06] p-4">
-        <div className="flex flex-1 flex-col items-center rounded-xl border border-white/[0.06] bg-white/[0.03] p-3.5">
-          <span className="text-[22px] font-bold text-white">
-            {sessions.length}
-          </span>
-          <span className="mt-0.5 text-[11px] uppercase text-slate-500">
-            Séances
-          </span>
-        </div>
-        {avgPspi != null && (
-          <div className="flex flex-1 flex-col items-center rounded-xl border border-white/[0.06] bg-white/[0.03] p-3.5">
-            <span className={`text-[22px] font-bold ${pspiColor(avgPspi)}`}>
-              {avgPspi.toFixed(1)}
+      {/* Hero card — PSPI moyen + Max */}
+      <div
+        className="mx-5 mt-2 rounded-[20px] bg-[var(--color-paper)] p-5"
+        style={{ border: '1px solid var(--color-ink-08)' }}
+      >
+        <div className="flex items-start justify-between">
+          <div>
+            <span className="text-[10px] uppercase text-[var(--color-ink-50)]" style={{ letterSpacing: '0.12em', fontWeight: 500 }}>
+              PSPI moyen · {sessions.length} séance{sessions.length > 1 ? 's' : ''}
             </span>
-            <span className="mt-0.5 text-[11px] uppercase text-slate-500">
-              PSPI moyen
-            </span>
+            <div className="mt-1.5 flex items-baseline gap-2">
+              <span
+                style={{
+                  fontFamily: 'var(--font-serif)',
+                  fontSize: 56,
+                  color: avgPspi != null ? pspiHex(avgPspi) : 'var(--color-ink-30)',
+                  lineHeight: 0.95,
+                  letterSpacing: '-0.01em',
+                }}
+              >
+                {avgPspi != null ? avgPspi.toFixed(1) : '--'}
+              </span>
+              <span className="text-[12px] text-[var(--color-ink-50)]" style={{ fontFamily: 'var(--font-mono)' }}>/16</span>
+            </div>
+            {avgPspi != null && (
+              <div className="mt-1.5 text-[13px]" style={{ color: pspiHex(avgPspi) }}>
+                {pspiLabel(avgPspi)}
+              </div>
+            )}
           </div>
-        )}
-        {sessions.length > 0 && (
-          <div className="flex flex-1 flex-col items-center rounded-xl border border-white/[0.06] bg-white/[0.03] p-3.5">
-            <span
-              className={`text-[22px] font-bold ${pspiColor(Math.max(...sessions.map((s) => s.maxPSPI)))}`}
-            >
-              {Math.max(...sessions.map((s) => s.maxPSPI)).toFixed(1)}
-            </span>
-            <span className="mt-0.5 text-[11px] uppercase text-slate-500">
-              PSPI max
-            </span>
+
+          {maxPspi != null && (
+            <div className="text-right">
+              <span className="text-[10px] uppercase text-[var(--color-ink-50)]" style={{ letterSpacing: '0.12em', fontWeight: 500 }}>
+                Plus haut
+              </span>
+              <div className="mt-1.5" style={{ fontFamily: 'var(--font-serif)', fontSize: 22, color: pspiHex(maxPspi), lineHeight: 1 }}>
+                {maxPspi.toFixed(1)}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {sessions.length >= 2 && (
+          <div className="mt-4">
+            <PspiEvolutionChart sessions={sessions} />
           </div>
         )}
       </div>
 
-      {/* ── Bouton démarrer séance ────────────────────────────────── */}
-      <div className="p-4">
+      {/* Actions */}
+      <div className="mt-4 flex gap-2.5 px-5">
         <Link
           href={`/camera?patientId=${patient.id}`}
-          className="flex items-center justify-center rounded-xl bg-gradient-to-r from-indigo-600 to-cyan-500 py-4 text-base font-bold text-white shadow-lg shadow-indigo-600/25 hover:from-indigo-500 hover:to-cyan-400 transition-all"
+          className="flex-1 rounded-[14px] bg-[var(--color-ink)] py-3 text-center text-[14px] font-medium text-[var(--color-ivory)] no-underline"
+          style={{ letterSpacing: '-0.1px' }}
         >
-          &#9654;  Démarrer une séance
+          Nouvelle séance
+        </Link>
+        <Link
+          href={`/consent/${patient.id}`}
+          className="flex-1 rounded-[14px] border border-[var(--color-ink-15)] bg-transparent py-3 text-center text-[14px] font-medium text-[var(--color-ink)] no-underline"
+          style={{ letterSpacing: '-0.1px' }}
+        >
+          Consentement
         </Link>
       </div>
 
-      {/* ── Graphe évolution ──────────────────────────────────────── */}
-      {sessions.length >= 2 && (
-        <div className="mx-4 mt-2 rounded-xl border border-white/[0.06] bg-white/[0.03]">
-          <h2 className="px-4 pb-2.5 pt-3.5 text-[13px] font-bold uppercase tracking-wide text-slate-500">
-            Évolution PSPI moyen
-          </h2>
-          <div className="px-4 pb-4">
-            <PspiEvolutionChart sessions={sessions} />
-          </div>
+      {/* Consent badge */}
+      <div className="mx-5 mt-3">
+        <div
+          className="flex items-center gap-2 rounded-full px-3 py-1.5 w-fit"
+          style={{
+            background: consentOk ? 'rgba(76,124,91,0.08)' : 'rgba(182,122,31,0.08)',
+            border: `1px solid ${consentOk ? 'rgba(76,124,91,0.25)' : 'rgba(182,122,31,0.28)'}`,
+          }}
+        >
+          <span
+            className="h-1.5 w-1.5 rounded-full"
+            style={{ background: consentOk ? 'var(--color-pspi-green)' : 'var(--color-pspi-amber)' }}
+          />
+          <span
+            className="text-[10.5px] uppercase"
+            style={{
+              fontFamily: 'var(--font-mono)',
+              letterSpacing: '0.08em',
+              color: consentOk ? 'var(--color-pspi-green)' : 'var(--color-pspi-amber)',
+            }}
+          >
+            {consentOk ? 'Consentement RGPD signé' : 'Consentement manquant'}
+          </span>
         </div>
-      )}
+      </div>
 
-      {/* ── Historique séances ─────────────────────────────────────── */}
-      <div className="mt-4 px-4">
-        <h2 className="pb-3 text-[13px] font-bold uppercase tracking-wide text-slate-500">
-          Séances ({sessions.length})
-        </h2>
+      {/* Séances récentes */}
+      <div className="mt-5 px-7">
+        <span className="text-[10px] uppercase text-[var(--color-ink-50)]" style={{ letterSpacing: '0.12em', fontWeight: 500 }}>
+          Séances récentes
+        </span>
+      </div>
+      <div className="mt-2">
         {sessions.length === 0 ? (
-          <div className="rounded-xl border border-white/[0.06] bg-white/[0.03] px-6 py-8 text-center">
-            <p className="text-sm text-slate-500">
+          <div className="mx-5 rounded-[14px] border border-[var(--color-ink-08)] bg-[var(--color-paper)] px-6 py-8 text-center">
+            <p className="text-[13px] text-[var(--color-ink-50)]">
               Aucune séance enregistrée
             </p>
           </div>
         ) : (
-          <div className="flex flex-col gap-2">
-            {sessions.map((s) => <SessionRow key={s.id} session={s} />)}
-          </div>
+          sessions.map((s) => <SessionRow key={s.id} session={s} />)
         )}
       </div>
 
-      {/* ── Calibration profile ────────────────────────────────────── */}
+      {/* Calibration profile */}
       {patient.calibrationProfile && (
-        <div className="mx-4 mt-4 rounded-xl border border-white/[0.06] bg-white/[0.03]">
-          <h2 className="px-4 pb-2.5 pt-3.5 text-[13px] font-bold uppercase tracking-wide text-slate-500">
+        <div className="mx-5 mt-5 rounded-[14px] border border-[var(--color-ink-08)] bg-[var(--color-paper)] p-4">
+          <div className="text-[10px] uppercase text-[var(--color-ink-50)]" style={{ letterSpacing: '0.12em', fontWeight: 500 }}>
             Profil de calibration
-          </h2>
-          <div className="grid grid-cols-3 gap-2 px-4 pb-4">
+          </div>
+          <div className="mt-3 grid grid-cols-3 gap-2">
             {Object.entries(patient.calibrationProfile).map(([au, data]) => (
-              <div key={au} className="rounded-lg border border-white/[0.06] bg-white/[0.03] p-2 text-center">
-                <p className="text-xs font-bold uppercase text-slate-400">
-                  {au}
+              <div
+                key={au}
+                className="rounded-[10px] border border-[var(--color-ink-08)] bg-[var(--color-ivory)] p-2 text-center"
+              >
+                <p className="text-[10px] font-medium text-[var(--color-accent-ink)]" style={{ fontFamily: 'var(--font-mono)', letterSpacing: '0.04em' }}>
+                  {au.toUpperCase()}
                 </p>
-                <p className="text-[11px] text-slate-600">
-                  base: {typeof data === 'object' && data && 'baseline' in data ? (data as { baseline: number }).baseline.toFixed(3) : '-'}
+                <p className="text-[11px] text-[var(--color-ink-50)]" style={{ fontFamily: 'var(--font-mono)' }}>
+                  base:{' '}
+                  {typeof data === 'object' && data && 'baseline' in data
+                    ? (data as { baseline: number }).baseline.toFixed(3)
+                    : '-'}
                 </p>
               </div>
             ))}
@@ -581,28 +497,44 @@ export default function PatientDetailPage() {
         </div>
       )}
 
-      {/* ── Disclaimer médical ─────────────────────────────────────── */}
-      <div className="mx-4 mt-4 rounded-xl border border-amber-500/20 bg-amber-500/[0.06] p-3.5">
-        <p className="text-xs text-amber-300/80">
-          <strong className="text-amber-300">Avertissement médical :</strong> PainFace est un outil
-          d&apos;aide à l&apos;observation. Il ne constitue pas un
-          dispositif médical et ne remplace pas l&apos;évaluation clinique
-          d&apos;un professionnel de santé.
+      {/* Secondary actions */}
+      <div className="mt-5 px-5 flex gap-2.5">
+        <button
+          type="button"
+          onClick={() => setShowEdit(true)}
+          className="flex-1 rounded-[12px] border border-[var(--color-ink-15)] bg-transparent py-2.5 text-[13px] font-medium text-[var(--color-ink)]"
+        >
+          Modifier
+        </button>
+        <button
+          type="button"
+          onClick={handleDelete}
+          className="flex-1 rounded-[12px] border border-[var(--color-pspi-rose)]/30 bg-[var(--color-pspi-rose)]/5 py-2.5 text-[13px] font-medium text-[var(--color-pspi-rose)]"
+        >
+          Supprimer
+        </button>
+      </div>
+
+      {/* Disclaimer */}
+      <div className="mx-5 mt-5 rounded-[14px] bg-[var(--color-paper)] p-4" style={{ border: '1px solid var(--color-ink-08)' }}>
+        <p className="text-[11.5px] leading-[1.5] text-[var(--color-ink-70)]">
+          <strong className="text-[var(--color-ink)]">Avertissement :</strong> PainFace est un outil d&apos;aide
+          à l&apos;observation. Il ne constitue pas un dispositif médical et ne remplace pas l&apos;évaluation
+          clinique d&apos;un professionnel de santé.
         </p>
       </div>
 
-      {/* ── Droit à l'oubli RGPD Art. 17 ──────────────────────────── */}
-      <div className="px-4 pb-8 pt-4">
+      {/* Droit à l'oubli */}
+      <div className="px-5 pb-8 pt-4">
         <button
           type="button"
           onClick={handleGdprErase}
-          className="w-full rounded-xl border border-red-500/20 bg-transparent py-3.5 text-sm font-semibold text-red-400/70 hover:bg-red-500/10 hover:text-red-400 transition-colors"
+          className="w-full rounded-[12px] border border-[var(--color-pspi-rose)]/30 bg-transparent py-3 text-[12.5px] font-medium text-[var(--color-pspi-rose)]/80 hover:bg-[var(--color-pspi-rose)]/5 transition-colors"
         >
           Supprimer toutes les données (RGPD Art. 17)
         </button>
       </div>
 
-      {/* ── Edit modal ─────────────────────────────────────────────── */}
       {patient && showEdit && (
         <EditPatientModal
           visible={showEdit}

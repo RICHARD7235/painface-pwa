@@ -1,145 +1,175 @@
 import Link from "next/link";
 
-// ── SVG Icons (Lucide-style) ─────────────────────────────────────────────────
+// ── Icons (1.5px stroke, clinical line style) ────────────────────────────────
 
-function IconMonitor({ color }: { color: string }) {
+function IconPatients() {
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-      <path d="M12 16v5" />
-      <path d="M8 21h8" />
-      <rect x="2" y="3" width="20" height="13" rx="2" />
-      <path d="M7 10l2 2 3-3 2 2 3-3" />
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="9" cy="8" r="3.5" />
+      <path d="M2.5 20c.8-3.3 3.4-5.5 6.5-5.5s5.7 2.2 6.5 5.5" />
+      <path d="M17 6v4M19 8h-4" />
     </svg>
   );
 }
 
-function IconPatients({ color }: { color: string }) {
+function IconHistory() {
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-      <path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2" />
-      <circle cx="9" cy="7" r="4" />
-      <path d="M19 8v6M22 11h-6" />
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7v5l3 2" />
     </svg>
   );
 }
 
-function IconHistory({ color }: { color: string }) {
+function IconSettings() {
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="10" />
-      <polyline points="12 6 12 12 16 14" />
-    </svg>
-  );
-}
-
-function IconSettings({ color }: { color: string }) {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-      <path d="M12.22 2h-.44a2 2 0 00-2 2v.18a2 2 0 01-1 1.73l-.43.25a2 2 0 01-2 0l-.15-.08a2 2 0 00-2.73.73l-.22.38a2 2 0 00.73 2.73l.15.1a2 2 0 011 1.72v.51a2 2 0 01-1 1.74l-.15.09a2 2 0 00-.73 2.73l.22.38a2 2 0 002.73.73l.15-.08a2 2 0 012 0l.43.25a2 2 0 011 1.73V20a2 2 0 002 2h.44a2 2 0 002-2v-.18a2 2 0 011-1.73l.43-.25a2 2 0 012 0l.15.08a2 2 0 002.73-.73l.22-.39a2 2 0 00-.73-2.73l-.15-.08a2 2 0 01-1-1.74v-.5a2 2 0 011-1.74l.15-.09a2 2 0 00.73-2.73l-.22-.38a2 2 0 00-2.73-.73l-.15.08a2 2 0 01-2 0l-.43-.25a2 2 0 01-1-1.73V4a2 2 0 00-2-2z" />
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
       <circle cx="12" cy="12" r="3" />
+      <path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-1.8-.3 1.6 1.6 0 0 0-1 1.5V21a2 2 0 0 1-4 0v-.1a1.6 1.6 0 0 0-1-1.5 1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0 .3-1.8 1.6 1.6 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1a1.6 1.6 0 0 0 1.5-1 1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H9a1.6 1.6 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.1a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V9a1.6 1.6 0 0 0 1.5 1H21a2 2 0 0 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z" />
     </svg>
   );
 }
 
-// ── Nav items ────────────────────────────────────────────────────────────────
+function IconChev() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M9 6l6 6-6 6" />
+    </svg>
+  );
+}
 
-const NAV_ITEMS = [
-  {
-    href: "/camera",
-    label: "Monitor",
-    sublabel: "Suivi de la douleur en temps réel",
-    Icon: IconMonitor,
-    iconColor: "#818cf8",
-    iconBg: "bg-indigo-500/20",
-    primary: true,
-  },
-  {
-    href: "/patients",
-    label: "Patients",
-    sublabel: "Liste et gestion des patients",
-    Icon: IconPatients,
-    iconColor: "#34d399",
-    iconBg: "bg-emerald-500/15",
-  },
-  {
-    href: "/history",
-    label: "Historique",
-    sublabel: "Dernières séances enregistrées",
-    Icon: IconHistory,
-    iconColor: "#fbbf24",
-    iconBg: "bg-amber-500/15",
-  },
-  {
-    href: "/settings",
-    label: "Réglages",
-    sublabel: "Seuils, lissage et calibration",
-    Icon: IconSettings,
-    iconColor: "#94a3b8",
-    iconBg: "bg-slate-500/15",
-  },
+function IconShield() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 3l8 3v6c0 4.5-3.5 8-8 9-4.5-1-8-4.5-8-9V6l8-3z" />
+    </svg>
+  );
+}
+
+// ── Secondary items ──────────────────────────────────────────────────────────
+
+const SECONDARY = [
+  { href: "/patients", label: "Patients", sub: "Dossiers · consentements RGPD", Icon: IconPatients },
+  { href: "/history", label: "Historique", sub: "Séances enregistrées", Icon: IconHistory },
+  { href: "/settings", label: "Paramètres", sub: "Seuils AU · calibration · lissage", Icon: IconSettings },
 ];
 
 // ── Page ─────────────────────────────────────────────────────────────────────
 
 export default function HomePage() {
+  const today = new Intl.DateTimeFormat("fr-FR", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  }).format(new Date());
+
   return (
-    <div className="flex flex-1 flex-col bg-[#0a0e1a] px-5 pt-6 pb-4 overflow-auto">
+    <div className="flex flex-1 flex-col overflow-auto bg-[var(--color-ivory)]">
       <div className="mx-auto w-full max-w-md flex flex-col flex-1">
-        {/* Hero */}
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-white tracking-tight">
-            Analyse faciale
+        {/* Editorial hero */}
+        <div className="px-7 pt-4 pb-6 border-b border-[var(--color-ink-rule)]">
+          <p
+            className="text-[10px] uppercase text-[var(--color-ink-50)]"
+            style={{ letterSpacing: "0.12em", fontWeight: 500 }}
+          >
+            Aujourd&apos;hui · {today.charAt(0).toUpperCase() + today.slice(1)}
+          </p>
+          <h1
+            className="mt-2.5 text-[var(--color-ink)]"
+            style={{
+              fontFamily: "var(--font-serif)",
+              fontSize: 40,
+              lineHeight: 1.05,
+              letterSpacing: "-0.5px",
+            }}
+          >
+            Analyse faciale <em className="italic text-[var(--color-accent-ink)]">clinique</em>.
           </h1>
-          <p className="mt-1 text-sm text-slate-400">
-            Monitoring FACS de la douleur pour kinésithérapeutes
+          <p className="mt-2.5 max-w-[290px] text-[14px] leading-[1.45] text-[var(--color-ink-70)]">
+            Monitoring FACS de la douleur — score PSPI calculé en local, à partir des Action Units.
           </p>
         </div>
 
-        {/* Navigation cards */}
-        <nav className="flex flex-col gap-3">
-          {NAV_ITEMS.map((item) => (
+        {/* Primary action — dark card */}
+        <div className="px-5 pt-5">
+          <Link
+            href="/camera"
+            className="relative block overflow-hidden rounded-3xl bg-[var(--color-ink)] px-6 py-5 text-[#F4F1EA]"
+          >
+            <div className="flex items-start justify-between">
+              <div>
+                <span
+                  className="text-[10px] uppercase"
+                  style={{ letterSpacing: "0.12em", fontWeight: 500, color: "rgba(244,241,234,0.5)" }}
+                >
+                  Démarrer
+                </span>
+                <div
+                  className="mt-1.5"
+                  style={{ fontFamily: "var(--font-serif)", fontSize: 26, letterSpacing: "-0.3px", lineHeight: 1 }}
+                >
+                  Nouveau monitoring
+                </div>
+                <div className="mt-1 text-[12.5px]" style={{ color: "rgba(244,241,234,0.65)" }}>
+                  Caméra + analyse FACS en temps réel
+                </div>
+              </div>
+              <div
+                className="flex h-[38px] w-[38px] items-center justify-center rounded-full"
+                style={{ background: "rgba(244,241,234,0.08)" }}
+              >
+                <IconChev />
+              </div>
+            </div>
+            <svg width="100%" height="36" viewBox="0 0 300 36" className="mt-3 opacity-50">
+              <path
+                d="M0 18 L20 18 L28 10 L38 22 L48 6 L58 26 L68 14 L78 20 L90 12 L100 24 L108 18 L300 18"
+                stroke="#F4F1EA"
+                strokeWidth="1"
+                fill="none"
+                strokeLinecap="round"
+              />
+            </svg>
+          </Link>
+        </div>
+
+        {/* Secondary list — hairline-separated rows */}
+        <nav className="px-5 mt-2">
+          {SECONDARY.map((it, i) => (
             <Link
-              key={item.href}
-              href={item.href}
-              className={`group relative flex items-center gap-4 rounded-2xl border px-5 py-4 transition-all active:scale-[0.98] ${
-                item.primary
-                  ? "border-indigo-500/30 bg-gradient-to-r from-indigo-600/20 to-cyan-600/10"
-                  : "border-white/[0.06] bg-white/[0.03] hover:bg-white/[0.06]"
-              }`}
+              key={it.href}
+              href={it.href}
+              className="flex items-center gap-3.5 px-2 py-4 no-underline"
+              style={{
+                borderBottom: i < SECONDARY.length - 1 ? "1px solid var(--color-ink-rule)" : "none",
+              }}
             >
-              {/* Icon */}
-              <div className={`flex h-11 w-11 items-center justify-center rounded-xl ${item.iconBg}`}>
-                <item.Icon color={item.iconColor} />
+              <div
+                className="flex h-9 w-9 items-center justify-center rounded-[10px] text-[var(--color-ink)]"
+                style={{ border: "1px solid var(--color-ink-15)" }}
+              >
+                <it.Icon />
               </div>
-
-              {/* Text */}
-              <div className="flex-1 min-w-0">
-                <span className="text-[15px] font-semibold text-white">{item.label}</span>
-                <p className="text-xs text-slate-500 mt-0.5">{item.sublabel}</p>
+              <div className="flex-1">
+                <div className="text-[15.5px] font-medium text-[var(--color-ink)]" style={{ letterSpacing: "-0.2px" }}>
+                  {it.label}
+                </div>
+                <div className="mt-[1px] text-[12px] text-[var(--color-ink-50)]">{it.sub}</div>
               </div>
-
-              {/* Arrow */}
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-slate-600 group-hover:text-slate-400 transition-colors" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="9 18 15 12 9 6" />
-              </svg>
+              <span className="text-[var(--color-ink-30)]"><IconChev /></span>
             </Link>
           ))}
         </nav>
 
-        {/* Medical disclaimer */}
-        <div className="mt-auto pt-5">
-          <div className="rounded-xl border border-amber-500/10 bg-amber-500/[0.04] px-4 py-3">
-            <div className="flex items-start gap-2.5">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-amber-500/70 mt-0.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
-                <line x1="12" y1="9" x2="12" y2="13" />
-                <line x1="12" y1="17" x2="12.01" y2="17" />
-              </svg>
-              <p className="text-[11px] leading-relaxed text-slate-500">
-                <span className="font-semibold text-amber-500/80">Avertissement</span> — Outil d&apos;aide à l&apos;observation destiné aux professionnels de santé. Ne constitue pas un dispositif médical certifié.
-              </p>
-            </div>
-          </div>
+        {/* Footnote — editorial disclaimer */}
+        <div
+          className="mt-auto mx-7 pt-3 pb-4 flex items-center gap-2"
+          style={{ borderTop: "1px solid var(--color-ink-rule)" }}
+        >
+          <span className="text-[var(--color-ink-50)]"><IconShield /></span>
+          <span className="text-[10.5px] leading-[1.4] text-[var(--color-ink-50)]" style={{ letterSpacing: "-0.1px" }}>
+            Outil d&apos;aide à l&apos;observation FACS · PSPI (Prkachin &amp; Solomon, 2008). Non certifié dispositif médical.
+          </span>
         </div>
       </div>
     </div>

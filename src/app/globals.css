@@ -1,9 +1,33 @@
 @import "tailwindcss";
 
 @theme inline {
-  --font-sans: var(--font-inter);
-  --color-indigo-600: #4F46E5;
-  --color-indigo-700: #4338CA;
+  --font-sans: "Inter Tight", "Inter", "SF Pro Text", -apple-system, system-ui, sans-serif;
+  --font-serif: "Instrument Serif", "Source Serif 4", "Iowan Old Style", "Baskerville", Georgia, serif;
+  --font-mono: "JetBrains Mono", "SF Mono", ui-monospace, Menlo, monospace;
+
+  /* ─── PainFace · Clinical tokens ─────────────────────────────── */
+  --color-ivory: #F4F1EA;
+  --color-paper: #FBF9F4;
+  --color-paper-alt: #EFEBE2;
+
+  --color-ink: #14171C;
+  --color-ink-70: #14171Cb3;
+  --color-ink-50: #14171C80;
+  --color-ink-30: #14171C4d;
+  --color-ink-15: #14171C26;
+  --color-ink-08: #14171C14;
+  --color-ink-rule: #0000000d;
+
+  --color-black-bg: #0B0E12;
+  --color-char: #14181F;
+
+  --color-accent: #2F4B8A;
+  --color-accent-ink: #1E3266;
+
+  /* Semantic PSPI zones */
+  --color-pspi-green: #4C7C5B;
+  --color-pspi-amber: #B67A1F;
+  --color-pspi-rose: #B04447;
 }
 
 /* iOS PWA: prevent bounce scroll */
@@ -16,6 +40,16 @@ html, body {
 body {
   padding-top: env(safe-area-inset-top);
   padding-bottom: env(safe-area-inset-bottom);
+  font-family: var(--font-sans);
+  color: var(--color-ink);
+  background: var(--color-ivory);
+  font-feature-settings: "ss01", "cv11";
+}
+
+/* Tabular numerals for all data-type contexts */
+.tabular-nums,
+.font-mono {
+  font-variant-numeric: tabular-nums;
 }
 
 /* PWA install banner slide-up animation */
@@ -25,4 +59,9 @@ body {
 }
 .animate-slide-up {
   animation: slide-up 0.4s ease-out;
+}
+
+/* Thin hairline rule used across cards */
+.hairline {
+  border-color: var(--color-ink-08);
 }
